@@ -25,12 +25,12 @@ ThreePlot.plot(myLine, targetHtmlElement)
 
 ThreePlot will figure the rest out. There are many customizable options, check out `/examples/api-overview.js` if you want a quick reference to them.
 
-Notes
-------
-
-* For efficiency reasons there is a finite size to the trajectories being animated. A finite size buffer is created to hold the geometry being plotted.
-
 Examples
 ---------
 
 * TODO See files in `/examples`
+
+Notes
+------
+
+* For efficiency reasons there is a finite size to the trajectories being animated. A finite size buffer is created to hold the geometry being plotted.

@@ -1,4 +1,4 @@
-var plots = [];
+var plots = [];
 
 /*\
 |*|    Static trajectory example

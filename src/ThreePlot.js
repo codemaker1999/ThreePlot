@@ -16,10 +16,31 @@ var ThreePlot = {
             return new THREE.Vector3(xyz[0],xyz[1],xyz[2]);
         },
 
-        "getMetrics": function (plots) {
+        "getMetrics": function (plots, settings) {
             // TODO
-            // return {orbitTarget,cameraPos,...}
+            // return {orbitTarget,cameraPosn,...}
             // RETURN THREEJS OBJECTS!!
+            var maxVal,
+                minVal,
+                sot = settings.orbitTarget,
+                scp = settings.cameraPosn,
+                ot = sot ? this.v(sot) : getOT(),
+                cp = scp ? this.v(scp) : getCP();
+            function getOT () {
+                // set max and min values for use later
+            };
+            function getCP () {
+                // ot is defined, reuse max / min values
+            };
+            function lighting () {
+                // return list of light positions
+                // TODO expose through API?
+            }
+            return {
+                "orbitTarget": ot,
+                "cameraPosn": cp,
+                "lightPosns": lighting()
+            }
         }
 
     },
@@ -30,8 +51,8 @@ var ThreePlot = {
 
         // preliminary setup
         var NUMPLOTS = plots.length,
-            // var SCALE = 1, // TODO does anyone want this option?
-            WIDTH    = plotTarget.style.width,
+            // var SCALE = 1, // TODO expose this option?
+            WIDTH    = plotTarget.style.width, // TODO don't even know if this works
             HEIGHT   = plotTarget.style.height,
             BLACK    = new THREE.Color().setRGB(0,0,0),
             WHITE    = new THREE.Color().setRGB(1,1,1),
@@ -40,10 +61,10 @@ var ThreePlot = {
             CAMANGLE = this.settings.cameraAngle,
             CTRLTYPE = this.settings.ctrlType,
             AUTOROT  = this.settings.autoRotate,
-            METRICS  = this.helpers.getMetrics(plots),
+            METRICS  = this.helpers.getMetrics(plots, this.settings),
             //
             orbitTarget = METRICS.orbitTarget,
-            cameraPos   = METRICS.cameraPos,
+            cameraPosn   = METRICS.cameraPosn,
             renderer,
             scene,
             camera,
@@ -88,7 +109,7 @@ var ThreePlot = {
             scene = new THREE.Scene();
 
             camera = new THREE.PerspectiveCamera(CAMANGLE, WIDTH/HEIGHT, NEAR, FAR);
-            camera.position.set(cameraPos);
+            camera.position.set(cameraPosn);
             camera.up = new THREE.Vector3(0,0,1);
             camera.lookAt(orbitTarget);
             scene.add(camera);
@@ -106,7 +127,7 @@ var ThreePlot = {
             controls.autoRotate = AUTOROT;
 
             // add lights and other objects
-            initLights();
+            initLights(METRICS.lightPosns);
             initObjects();
 
             // events
@@ -119,22 +140,28 @@ var ThreePlot = {
         // -----------------------------
 
         function resetCamera() {
-            camera.position = cameraPos;
+            camera.position = cameraPosn;
             camera.lookAt(orbitTarget);
         }
 
         // -----------------------------
 
-        function initLights() {
-            var distance = 40;
-            var light = new THREE.PointLight( 0xffffff, 1.5, 1.5 * distance );
-            scene.add( light );
-            lights.push( light );
+        function initLights(lightPosns) {
+            // TODO directional light? attach to camera? need to change this!
+            for (var i = 0; i < lightPosns.length; i++) {
+                var p = lightPosns[i]
+                var distance = 40;
+                var light = new THREE.PointLight( 0xffffff, 1.5, 1.5 * distance );
+                light.position = p;
+                scene.add( light );
+                lights.push( light );
+            };
         }
 
         // -----------------------------
 
         function initObjects() {
+            // TODO big changes incoming here..
             for (var i=0; i<numTraj; i++){
                 var material = new THREE.LineBasicMaterial({
                 color: new THREE.Color().setHSL(i/numTraj,80/100,65/100),
