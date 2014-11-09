@@ -1,4 +1,4 @@
-var plots = [];
+var plots = [];
 
 /*\
 |*|    Static trajectory example
@@ -51,7 +51,7 @@ for (var i = 10; i < 80; i+=70/200) {
     };
     surfPoints.push(row);
 };
-var surf ={
+var surf = {
     // optional keys
     "label": "Surface Plot",
     // required keys
@@ -64,21 +64,23 @@ plots.push(surf);
 |*|    Global Settings
 \*/
 
-// ThreePlot chooses sensible defaults for all options
+// ThreePlot chooses sensible defaults for all settings
 // These are all available options
-ThreePlot.settings.showGrid: true;
-ThreePlot.settings.showAxes: true;
-ThreePlot.settings.autoRotate: true;
-ThreePlot.settings.ctrlType = "orbit" || "fly";
-ThreePlot.settings.near = 0.1; // render clipping distances
-ThreePlot.settings.far = 500;  // render clipping distances
-ThreePlot.settings.cameraAngle = 45;
-ThreePlot.settings.cameraPos = [10,10,10];
-ThreePlot.settings.orbitTarget = [0,0,0];
+var settings = {};
+settings.showGrid: true;
+settings.showAxes: true;
+settings.autoRotate: true;
+settings.autoCamera: true;
+settings.ctrlType = "orbit" || "fly";
+settings.near = 0.1; // render clipping distances
+settings.far = 500;  // render clipping distances
+settings.cameraAngle = 45;
+settings.cameraPos = [10,10,10];
+settings.orbitTarget = [0,0,0];
 
 /*\
 |*|    Run
 \*/
 
-ThreePlot.plot([ plots[0], plots[1] ], document.getElementById("plotTarget_1"));
-ThreePlot.plot([ plots[2] ], document.getElementById("plotTarget_2"));
+ThreePlot.plot([ plots[0], plots[1] ], document.getElementById("plotTarget_1"), settings);
+ThreePlot.plot([ plots[2] ], document.getElementById("plotTarget_2"), settings);
