@@ -7,8 +7,10 @@ var plots = [];
 var staticPlot = {
     // optional keys
     "label": "Square",
+    "color": "#ee1155",
     // required keys
     "type": "lineplot",
+    // type-specific keys (not animated)
     "data": [ [0,0,0], [1,0,0], [1,0,1], [0,0,1], [0,0,0] ]
 }
 plots.push(staticPlot);
@@ -20,9 +22,11 @@ plots.push(staticPlot);
 var anim = {
     // optional keys
     "label": "Animated Trajectory",
-    "animated": true,
+    "color": "#55ee11",
     // required keys
     "type": "lineplot",
+    // type-specific keys
+    "animated": true,
     "trajLength": 10000, // buffered geometry is fixed size
     "xyz": [0,1,0], // initial condition
     "step": function () {
@@ -41,11 +45,13 @@ plots.push(anim);
 |*|    Surface plot example
 \*/
 
-// use 2D array to hold data for unambiguous polygon generation
+// WIP: UGLY API
+
+// use 2D array to hold data for unambiguous polygon generation ???
 var surfPoints = [];
 for (var i = 10; i < 80; i+=70/200) {
     var row = [];
-    for (var j = 10; j < 80; j+=70/200) {
+    for (var j = 11; j < 80; j+=69/200) {
         // make some sinusoidal blanket thing
         row.push([i,j,Math.sin(i)+Math.sin(j)]);
     };
@@ -56,9 +62,17 @@ var surf = {
     "label": "Surface Plot",
     // required keys
     "type": "surfaceplot",
-    "data": surfPoints
+    // type-specific keys
+    "data":  surfPoints,
+    "up":    "z"
 };
 plots.push(surf);
+
+/*\
+|*|    Graph example
+\*/
+
+// TODO
 
 /*\
 |*|    Global Settings

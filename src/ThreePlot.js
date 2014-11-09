@@ -85,20 +85,60 @@ var ThreePlot = {
 
     },
 
-    "parseIPlot": function (plot) {
+    "parseIPlot": function (plot, scene) {
         "parse plottable object into an iterator that updates ThreeJS geometries";
 
-        // so much TODO
-        var iplot;
+        var iplot = {"plot": plot};
         
         switch (plot.type) {
             // -------------------------------------------------------
             case "lineplot":
+
+            var material = new THREE.LineBasicMaterial({
+                color: p.color,
+                linewidth: 2
+            });
+
+            var geometry = new THREE.Geometry();
+            
             if (plot.animated) {
-                //
+
+                // ThreeJS
+                geometry.dynamic = true;
+                var xyz = this.helpers.v(plot.xyz);
+                for (var j=0; j<plot.trajLength; j++) {
+                   geometry.vertices.push(xyz);
+                }
+                var traj = new THREE.Line(geometry, material);
+
+                // iplot
+                iplot.threeObj = traj;
+                iplot.update = function () {
+                    var xyz = this.plot.step();
+                    var new_xyz = new THREE.Vector3(xyz[0], xyz[1], xyz[2]);
+                    this.plot.xyz = new_xyz;
+                    // update trajectory
+                    this.threeObj.geometry.vertices.shift();
+                    this.threeObj.geometry.vertices.push(new_xyz);
+                    this.threeObj.geometry.verticesNeedUpdate = true;
+                };
+
             } else {
-                //
+
+                for (var j=0; j<plot.data.length; j++) {
+                    var xyz = this.helpers.v(plot.data[j]);
+                    geometry.vertices.push(xyz);
+                }
+                
+                var traj = new THREE.Line(geometry, material);
+
+                // don't change geometry
+                iplot.threeObj = traj;
+                iplot.update = function () {};
             };
+
+            scene.add(traj);
+
             break;
             
             // -------------------------------------------------------
@@ -106,7 +146,8 @@ var ThreePlot = {
             if (plot.animated) {
                 //
             } else {
-                //
+                // don't change geometry
+                iplot.update = function () {};
             };
             break;
 
@@ -115,7 +156,45 @@ var ThreePlot = {
         }
 
         return iplot;
-        /*for (var i = 0; i < numTraj; i++) {
+
+        /*
+        for (var i=0; i<NUMPLOTS; i++){
+            var p = plots[i];
+            if (p.type == 'lineplot') {
+
+                var material = new THREE.LineBasicMaterial({
+                    color: new THREE.Color().setHSL(i/NUMPLOTS,80/100,65/100),
+                    linewidth: 3
+                });
+
+                var geometry = new THREE.Geometry();
+
+                if (p.animated) {
+
+                    geometry.dynamic = true;
+                    var xyz = this.helpers.v(p.xyz);
+                    for (var j=0; j<p.trajLength; j++) {
+                       geometry.vertices.push(xyz);
+                    }
+                    var traj = new THREE.Line(geometry, material);
+                    p.threeObj = traj;
+
+                } else {
+
+                    for (var j=0; j<p.data.length; j++) {
+                        var xyz = this.helpers.v(p.data[j]);
+                        geometry.vertices.push(xyz);
+                    }
+                    var traj = new THREE.Line(geometry, material);
+                    p.threeObj = traj;
+
+                };
+
+                scene.add(traj);
+            };
+        }
+
+        for (var i = 0; i < numTraj; i++) {
             var system = systems[i];
             var traj = trajs[i];
 
@@ -127,7 +206,8 @@ var ThreePlot = {
             traj.geometry.vertices.shift();
             traj.geometry.vertices.push(new_xyz);
             traj.geometry.verticesNeedUpdate = true;
-        };*/
+        };
+        */
     },
 
     "animate": function (plotCtx) {
@@ -140,7 +220,7 @@ var ThreePlot = {
 
         // increment iterator plot objects
         for (var i = 0; i < plotCtx.iplots.length; i++) {
-            plotCtx.iplots[i].next();
+            plotCtx.iplots[i].update();
         };
 
         // update controls and render
@@ -257,7 +337,7 @@ var ThreePlot = {
         // Lights and Other Objects
 
         initLights();
-        initObjects();
+        // initObjects();
 
         // ---------------------
         // Events
@@ -278,7 +358,11 @@ var ThreePlot = {
 
         var iplots = [];
         for (var i = 0; i < plots.length; i++) {
-            iplots.push( this.parseIPlot(plots[i]) );
+            var p = plots[i];
+            // add/parse color
+            p.color = p.color ? new THREE.Color(p.color) : new THREE.Color().setHSL(i/plots.length,80/100,65/100);
+            // convert
+            iplots.push( this.parseIPlot(p, scene) );
         };
 
         // ---------------------
@@ -307,44 +391,6 @@ var ThreePlot = {
                 scene.add( light );
                 // lights.push( light );
             // };
-        }
-
-        function initObjects() {
-            for (var i=0; i<NUMPLOTS; i++){
-                var p = plots[i];
-                if (p.type == 'lineplot') {
-
-                    var material = new THREE.LineBasicMaterial({
-                        color: new THREE.Color().setHSL(i/NUMPLOTS,80/100,65/100),
-                        linewidth: 3
-                    });
-
-                    var geometry = new THREE.Geometry();
-
-                    if (p.animated) {
-
-                        geometry.dynamic = true;
-                        var xyz = this.helpers.v(p.xyz);
-                        for (var j=0; j<p.trajLength; j++) {
-                           geometry.vertices.push(xyz);
-                        }
-                        var traj = new THREE.Line(geometry, material);
-                        p.threeObj = traj;
-
-                    } else {
-
-                        for (var j=0; j<p.data.length; j++) {
-                            var xyz = this.helpers.v(p.data[j]);
-                            geometry.vertices.push(xyz);
-                        }
-                        var traj = new THREE.Line(geometry, material);
-                        p.threeObj = traj;
-
-                    };
-
-                    scene.add(traj);
-                };
-            }
         }
     },
 }
