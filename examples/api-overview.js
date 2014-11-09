@@ -83,8 +83,7 @@ plots.push(surf);
 var settings = {};
 settings.showGrid: true;
 settings.showAxes: true;
-settings.autoRotate: true;
-settings.autoCamera: true;
+settings.autoRotate: true; // for orbit controls
 settings.ctrlType = "orbit" || "fly";
 settings.near = 0.1; // render clipping distances
 settings.far = 500;  // render clipping distances

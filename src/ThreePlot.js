@@ -1,90 +1,69 @@
 var ThreePlot = {
-    
-    "helpers": {
 
-        "v": function (xyz) {
-            return new THREE.Vector3(xyz[0],xyz[1],xyz[2]);
-        },
-
-        "getMetrics": function (plots) {
-            var maxX, maxY, maxZ,
-                minX, minY, minZ;
-            // set Max and Min
-            for (var i = 0; i < plots.length; i++) {
-                var p = plots[i];
-                // TODO support for more types
-                if (p.type === "lineplot") {
-                    if (p.animated) {
-                        var px = p.xyz[0],
-                            py = p.xyz[1],
-                            pz = p.xyz[2];
-                        // init
-                        maxX = px;
-                        maxY = py;
-                        maxZ = pz;
-                        minX = px;
-                        minY = py;
-                        minZ = pz;
-                    } else {
-                        for (var j = 0; j < p.data.length; j++) {
-                            var px = p.data[j][0],
-                                py = p.data[j][1],
-                                pz = p.data[j][2];
-                            // init
-                            if (!maxX) maxX = px;
-                            if (!maxY) maxY = py;
-                            if (!maxZ) maxZ = pz;
-                            if (!minX) minX = px;
-                            if (!minY) minY = py;
-                            if (!minZ) minZ = pz;
-                            // set max
-                            maxX = px > maxX ? px : maxX;
-                            maxY = py > maxY ? py : maxY;
-                            maxZ = pz > maxZ ? pz : maxZ;
-                            // set min
-                            minX = px < minX ? px : minX;
-                            minY = py < minY ? py : minY;
-                            minZ = pz < minZ ? pz : minZ;
-                        };
-                    }
-                }
+    "getMetrics": function (plotCtx) {
+        var res = {
+            "maxX": 0, "maxY": 0, "maxZ": 0,
+            "minX": 0, "minY": 0, "minZ": 0,
+        };
+        
+        // set Max and Min helper
+        function setMaxMin (data) {
+            for (var j = 0; j < data.length; j++) {
+                var px = p.data[j][0],
+                    py = p.data[j][1],
+                    pz = p.data[j][2];
+                // set max
+                res.maxX = px > res.maxX ? px : res.maxX;
+                res.maxY = py > res.maxY ? py : res.maxY;
+                res.maxZ = pz > res.maxZ ? pz : res.maxZ;
+                // set min
+                res.minX = px < res.minX ? px : res.minX;
+                res.minY = py < res.minY ? py : res.minY;
+                res.minZ = pz < res.minZ ? pz : res.minZ;
             };
-            // if only animated
-            if (typeof maxX === 'undefined' ||
-                typeof maxY === 'undefined' ||
-                typeof maxZ === 'undefined') return {};
-            // else return metrics
-            var midX = (maxX - minX)/2,
-                midY = (maxY - minY)/2,
-                midZ = (maxZ - minZ)/2,
-                distX = Math.max(maxX - midX, midX - minX),
-                distY = Math.max(maxY - midY, midY - minY),
-                distZ = Math.max(maxZ - midZ, midZ - minZ),
-                dist = Math.max(Math.max(distX,distY), distZ);
-            return {
-                "maxX": maxX, "maxY": maxY, "maxZ": maxZ,
-                "minX": minX, "minY": minY, "minZ": minZ,
-                "center": new THREE.Vector3(midX, midY, midZ),
-                "distX": distX, "distY": distY, "distZ": distZ,
-                "maxDist": dist
-            }
-        },
-
-        "recenterCamera": function (plots) {
-            // TODO this goes elsewhere, refactor later
-            // call AFTER initializing scene
-            var M = this.helpers.getMetrics(plots),
-                relativeCameraPosn = new THREE.Vector3(
-                    Math.max(METRICS.distX, METRICS.distZ),
-                    METRICS.distY,
-                    0
-                ),
-                cameraPosn = relativeCameraPosn.add(orbitTarget);
-            camera.position = cameraPosn;
-            camera.lookAt(M.center);
-            controls.target.copy(M.center);
         }
+        
+        // type specific
+        for (var i = 0; i < plotCtx.iplots.length; i++) {
+            var ip = plotCtx.iplots[i],
+                p  = ip.plot;
+            if (p.type === "lineplot") {
+                if (p.animated) {
+                    if (ip.threeObj) {
+                        setMaxMin( ip.threeObj.geometry.vertices );
+                    }
+                } else {
+                    setMaxMin( p.data );
+                }
+            } else if (p.type === "surfaceplot") {
+                // TODO
+            }
+        };
 
+        // compute extra metrics
+        res.midX    = (res.maxX + res.minX)/2;
+        res.midY    = (res.maxY + res.minY)/2;
+        res.midZ    = (res.maxZ + res.minZ)/2;
+        res.distX   = (res.maxX - res.minX)/2;
+        res.distY   = (res.maxY - res.minY)/2;
+        res.distZ   = (res.maxZ - res.minZ)/2;
+        res.maxDist = Math.sqrt( Math.pow(res.distX, 2) + Math.pow(res.distY,2) + Math.pow(res.distZ, 2));
+        res.center  = new THREE.Vector3(res.midX, res.midY, res.midZ);
+
+        return res;
+    },
+
+    "retargetCamera": function (plotCtx) {
+        var M = ThreePlot.getMetrics(plotCtx),
+            relativeCameraPosn = new THREE.Vector3(
+                METRICS.distX,
+                METRICS.distY,
+                METRICS.distZ
+            ),
+            cameraPosn = relativeCameraPosn.add(M.center);
+        plotCtx.camera.position = cameraPosn;
+        plotCtx.camera.lookAt(M.center);
+        plotCtx.controls.target.copy(M.center); // for orbit
     },
 
     "parseIPlot": function (plot, scene) {
@@ -107,7 +86,7 @@ var ThreePlot = {
 
                 // ThreeJS
                 geometry.dynamic = true;
-                var xyz = this.helpers.v(plot.xyz);
+                var xyz = THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
                 for (var j=0; j<plot.trajLength; j++) {
                    geometry.vertices.push(xyz);
                 }
@@ -128,7 +107,7 @@ var ThreePlot = {
             } else {
 
                 for (var j=0; j<plot.data.length; j++) {
-                    var xyz = this.helpers.v(plot.data[j]);
+                    var xyz = THREE.Vector3( plot.data[j][0], plot.data[j][1], plot.data[j][2]);
                     geometry.vertices.push(xyz);
                 }
                 
@@ -159,57 +138,6 @@ var ThreePlot = {
 
         return iplot;
 
-        /*
-        for (var i=0; i<NUMPLOTS; i++){
-            var p = plots[i];
-            if (p.type == 'lineplot') {
-
-                var material = new THREE.LineBasicMaterial({
-                    color: new THREE.Color().setHSL(i/NUMPLOTS,80/100,65/100),
-                    linewidth: 3
-                });
-
-                var geometry = new THREE.Geometry();
-
-                if (p.animated) {
-
-                    geometry.dynamic = true;
-                    var xyz = this.helpers.v(p.xyz);
-                    for (var j=0; j<p.trajLength; j++) {
-                       geometry.vertices.push(xyz);
-                    }
-                    var traj = new THREE.Line(geometry, material);
-                    p.threeObj = traj;
-
-                } else {
-
-                    for (var j=0; j<p.data.length; j++) {
-                        var xyz = this.helpers.v(p.data[j]);
-                        geometry.vertices.push(xyz);
-                    }
-                    var traj = new THREE.Line(geometry, material);
-                    p.threeObj = traj;
-
-                };
-
-                scene.add(traj);
-            };
-        }
-
-        for (var i = 0; i < numTraj; i++) {
-            var system = systems[i];
-            var traj = trajs[i];
-
-            system.step();
-
-            var new_xyz = this.helpers.v(system.xyz);
-
-            // update trajectory
-            traj.geometry.vertices.shift();
-            traj.geometry.vertices.push(new_xyz);
-            traj.geometry.verticesNeedUpdate = true;
-        };
-        */
     },
 
     "animate": function (plotCtx) {
@@ -233,9 +161,6 @@ var ThreePlot = {
     "plot": function(plots, plotTarget) {
         "Sets up all the ThreeJS machinery and starts animation loop";
 
-        // check for webGL support
-        if ( ! Detector.webgl ) Detector.addGetWebGLMessage();
-        
         /*\
         |*| Settings
         \*/
@@ -244,13 +169,15 @@ var ThreePlot = {
         var settings = {};
         settings.showGrid    = userSettings.showGrid    || true; // TODO
         settings.showAxes    = userSettings.showAxes    || true; // TODO
-        settings.autoRotate  = userSettings.autoRotate  || true;
-        settings.autoCamera  = userSettings.autoCamera  || true;
+        settings.autoRotate  = userSettings.autoRotate  || false;
         settings.ctrlType    = userSettings.ctrlType    || "orbit";
         settings.near        = userSettings.near        || 0.1;
         settings.far         = userSettings.far         || 500;
         settings.cameraAngle = userSettings.cameraAngle || 45;
-        // TODO missing some options
+        // Used below:
+        // userSettings.cameraPosn
+        // userSettings.orbitTarget
+        // TODO missing some options?
 
         /*\
         |*| Declare variables
@@ -268,15 +195,15 @@ var ThreePlot = {
             CAMANGLE = settings.cameraAngle,
             CTRLTYPE = settings.ctrlType,
             AUTOROT  = settings.autoRotate,
-            METRICS  = this.helpers.getMetrics(plots),
+            METRICS  = ThreePlot.getMetrics(plots),
             // ThreeJS variables
-            orbitTarget = METRICS.center,
+            orbitTarget = userSettings.orbitTarget || METRICS.center,
             relativeCameraPosn = new THREE.Vector3(
                 Math.max(METRICS.distX, METRICS.distZ),
                 METRICS.distY,
                 0
             ).multiplyScalar(10),
-            cameraPosn = relativeCameraPosn.add(orbitTarget),
+            cameraPosn = userSettings.cameraPosn || relativeCameraPosn.add(orbitTarget),
             renderer,
             scene,
             camera,
@@ -346,16 +273,16 @@ var ThreePlot = {
         // ---------------------
         // Events
 
-        // TODO fix keydown listener
-        // window.addEventListener(
-        //     'keydown',
-        //     (function (that) {
-        //         return function (e) {
-        //             if (e.char === 'r') that.recenterCamera();
-        //         }
-        //     })(this),
-        //     false
-        // );
+        // retarget camera (helpful for animations)
+        plotTarget.addEventListener(
+            'keydown',
+            (function (plotCtx) {
+                return function (e) {
+                    if (e.char === 'r') ThreePlot.retargetCamera(plotCtx);
+                }
+            })(plotCtx),
+            false
+        );
         
         // ---------------------
         // Parse plot objects
