@@ -5,7 +5,7 @@ var ThreePlot = {
             "maxX": 0, "maxY": 0, "maxZ": 0,
             "minX": 0, "minY": 0, "minZ": 0,
         };
-        
+
         // set Max and Min helper
         function setMaxMin (data) {
             for (var j = 0; j < data.length; j++) {
@@ -195,15 +195,10 @@ var ThreePlot = {
             CAMANGLE = settings.cameraAngle,
             CTRLTYPE = settings.ctrlType,
             AUTOROT  = settings.autoRotate,
-            METRICS  = ThreePlot.getMetrics(plots),
+            ZERO     = THREE.Vector3(0,0,0),
             // ThreeJS variables
-            orbitTarget = userSettings.orbitTarget || METRICS.center,
-            relativeCameraPosn = new THREE.Vector3(
-                Math.max(METRICS.distX, METRICS.distZ),
-                METRICS.distY,
-                0
-            ).multiplyScalar(10),
-            cameraPosn = userSettings.cameraPosn || relativeCameraPosn.add(orbitTarget),
+            orbitTarget = userSettings.orbitTarget || ZERO,
+            cameraPosn = userSettings.cameraPosn || ZERO,
             renderer,
             scene,
             camera,
@@ -265,12 +260,6 @@ var ThreePlot = {
         }
 
         // ---------------------
-        // Lights and Other Objects
-
-        initLights();
-        // initObjects();
-
-        // ---------------------
         // Events
 
         // retarget camera (helpful for animations)
@@ -306,7 +295,11 @@ var ThreePlot = {
         plotCtx.controls = controls;
         plotCtx.iplots = iplots;
 
-        DEBUG_plotCtx = plotCtx;
+        // fix camera
+        this.retargetCamera(plotCtx);
+
+        // let there be light
+        initLights(plotCtx);
 
         // begin animating
         ThreePlot.animate(plotCtx);
@@ -314,16 +307,14 @@ var ThreePlot = {
         // ---------------------
         // Helpers
 
-        function initLights() {
+        function initLights(plotCtx) {
             // TODO directional light? attach to camera? need to change this!
-            // for (var i = 0; i < lightPosns.length; i++) {
-                var p = METRICS.center;
-                var distance = METRICS.maxDist;
-                var light = new THREE.PointLight( 0xffffff, 1.5, 1.5 * distance );
-                light.position = p;
-                scene.add( light );
-                // lights.push( light );
-            // };
+            var METRICS = this.getMetrics(plotCtx);
+            var p = METRICS.center;
+            var distance = METRICS.maxDist;
+            var light = new THREE.PointLight( 0xffffff, 1.5, 1.5 * distance );
+            light.position = p;
+            scene.add( light );
         }
     },
 }
