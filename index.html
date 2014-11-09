@@ -1,0 +1,54 @@
+<!DOCTYPE HTML>
+<html lang="en" webkitallowfullscreen mozallowfullscreen allowfullscreen>
+<head>
+<title>ThreePlot Test</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <style>
+    body {
+        background-color: #fff;
+        margin: 0px;
+        overflow: hidden;
+    }
+    #container {
+        width: 800px;
+        height: 600px;
+    }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <!--
+    <script src="/vendor/js/threejs/controls/FlyControls.js"></script>
+    -->
+    <script src="/vendor/js/threejs/three.min.js"></script>
+    <script src="/vendor/js/threejs/controls/OrbitControls.js"></script>
+    <script src="/vendor/js/threejs/Detector.js"></script>
+    <script src="/src/ThreePlot.js"></script>
+    <script type="text/javascript">
+    var staticPlot = {
+        "color": "#ee1155",
+        "type": "lineplot",
+        "data": [ [0,0,0], [1,0,0], [1,0,1], [0,0,1], [0,0,0] ]
+    };
+
+    var anim = {
+        "color": "#55ee11",
+        "type": "lineplot",
+        "animated": true,
+        "trajLength": 10000, // buffered geometry is fixed size
+        "xyz": [0,1,0], // initial condition
+        "step": function () {
+            var t = this.t;
+            var p = [Math.sin(t), Math.cos(t), t/30];
+            this.t += this.dt;
+            return p;
+        },
+        "t": 0,
+        "dt": 1/50
+    };
+
+    ThreePlot.plot([ staticPlot, anim ], document.getElementById("container"));
+    </script>
+</body>
+</html>

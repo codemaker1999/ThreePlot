@@ -6,18 +6,18 @@ var ThreePlot = {
             return new THREE.Vector3(xyz[0],xyz[1],xyz[2]);
         },
 
-        "getMetrics": function (plots, settings) {
+        "getMetrics": function (plots) {
             var maxX, maxY, maxZ,
                 minX, minY, minZ;
             // set Max and Min
             for (var i = 0; i < plots.length; i++) {
                 var p = plots[i];
                 // TODO support for more types
-                if (p.type == "lineplot") {
+                if (p.type === "lineplot") {
                     if (p.animated) {
-                        var px = p.xyz.[0],
-                            py = p.xyz.[1],
-                            pz = p.xyz.[2];
+                        var px = p.xyz[0],
+                            py = p.xyz[1],
+                            pz = p.xyz[2];
                         // init
                         maxX = px;
                         maxY = py;
@@ -26,7 +26,7 @@ var ThreePlot = {
                         minY = py;
                         minZ = pz;
                     } else {
-                        for (var j = 0; j < p.data; j++) {
+                        for (var j = 0; j < p.data.length; j++) {
                             var px = p.data[j][0],
                                 py = p.data[j][1],
                                 pz = p.data[j][2];
@@ -50,7 +50,9 @@ var ThreePlot = {
                 }
             };
             // if only animated
-            if (!maxX || !maxY || !maxZ) return {};
+            if (typeof maxX === 'undefined' ||
+                typeof maxY === 'undefined' ||
+                typeof maxZ === 'undefined') return {};
             // else return metrics
             var midX = (maxX - minX)/2,
                 midY = (maxY - minY)/2,
@@ -95,7 +97,7 @@ var ThreePlot = {
             case "lineplot":
 
             var material = new THREE.LineBasicMaterial({
-                color: p.color,
+                color: plot.color,
                 linewidth: 2
             });
 
@@ -238,7 +240,7 @@ var ThreePlot = {
         |*| Settings
         \*/
 
-        var userSettings = arguments[2];
+        var userSettings = arguments[2] || {};
         var settings = {};
         settings.showGrid    = userSettings.showGrid    || true; // TODO
         settings.showAxes    = userSettings.showAxes    || true; // TODO
@@ -257,15 +259,15 @@ var ThreePlot = {
         var // local constants
             NUMPLOTS = plots.length,
             // var SCALE = 1, // TODO expose this option?
-            WIDTH    = plotTarget.style.width, // TODO don't know if this works
-            HEIGHT   = plotTarget.style.height,
+            WIDTH    = plotTarget.offsetWidth,
+            HEIGHT   = plotTarget.offsetHeight,
             BLACK    = new THREE.Color().setRGB(0,0,0),
             WHITE    = new THREE.Color().setRGB(1,1,1),
-            NEAR     = this.settings.near,
-            FAR      = this.settings.far,
-            CAMANGLE = this.settings.cameraAngle,
-            CTRLTYPE = this.settings.ctrlType,
-            AUTOROT  = this.settings.autoRotate,
+            NEAR     = settings.near,
+            FAR      = settings.far,
+            CAMANGLE = settings.cameraAngle,
+            CTRLTYPE = settings.ctrlType,
+            AUTOROT  = settings.autoRotate,
             METRICS  = this.helpers.getMetrics(plots),
             // ThreeJS variables
             orbitTarget = METRICS.center,
@@ -273,7 +275,7 @@ var ThreePlot = {
                 Math.max(METRICS.distX, METRICS.distZ),
                 METRICS.distY,
                 0
-            ),
+            ).multiplyScalar(10),
             cameraPosn = relativeCameraPosn.add(orbitTarget),
             renderer,
             scene,
@@ -314,7 +316,9 @@ var ThreePlot = {
         // Camera
 
         camera = new THREE.PerspectiveCamera(CAMANGLE, WIDTH/HEIGHT, NEAR, FAR);
-        camera.position.set(cameraPosn);
+        camera.position.x = cameraPosn.x;
+        camera.position.y = cameraPosn.y;
+        camera.position.z = cameraPosn.z;
         camera.up = new THREE.Vector3(0,0,1);
         camera.lookAt(orbitTarget);
         scene.add(camera);
@@ -322,11 +326,11 @@ var ThreePlot = {
         // ---------------------
         // Controls
 
-        if (ctrlType === "fly") {
+        if (CTRLTYPE === "fly") {
             controls = new THREE.FlyControls( camera );
             controls.dragToLook = true;
             // controls.autoForward = true;
-        } else if (ctrlType === "orbit") {
+        } else if (CTRLTYPE === "orbit") {
             controls = new THREE.OrbitControls( camera, renderer.domElement );
             controls.target.copy(orbitTarget);
             // TODO maybe pause rotation on mouse down or something
@@ -374,6 +378,8 @@ var ThreePlot = {
         plotCtx.camera = camera;
         plotCtx.controls = controls;
         plotCtx.iplots = iplots;
+
+        DEBUG_plotCtx = plotCtx;
 
         // begin animating
         ThreePlot.animate(plotCtx);
