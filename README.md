@@ -7,12 +7,18 @@ The main goals of this project are to provide
 
 * easily embeddable visualizations
 
-A rich (TODO) set of examples provides starting points for common tasks
+* A rich set of examples to provide a starting point for common tasks
 
 Usage
 ------
 
-The only necessary step is to create a valid plottable object, and provide a DIV or something for the plot to live in. There are several types of plottable objects, including lines in 3D space, surface plots, and animated 3D lines. For example, say you wanted to create an interactive 3D line plot:
+There are only two steps to getting started.
+
+1. load in the ThreeJS and ThreePlot libraries
+
+2. create a valid plottable object, and provide a DIV or something for the plot to live in
+
+There are several types of plottable objects, including lines in 3D space, animated 3D lines, and surface plots (coming soon). For example, say you wanted to create an interactive 3D line plot:
 
 ```js
 var myLine = {
@@ -28,7 +34,7 @@ ThreePlot will figure the rest out. There are many customizable options, check o
 Examples
 ---------
 
-* TODO See files in `/examples`
+* See files in `/examples`
 
 Notes
 ------
