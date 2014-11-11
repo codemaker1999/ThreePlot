@@ -83,11 +83,11 @@ plots.push(surf);
 var settings = {};
 settings.showGrid: true;
 settings.showAxes: true;
-settings.autoRotate: true; // for orbit controls
 settings.ctrlType = "orbit" || "fly";
-settings.near = 0.1; // render clipping distances
+settings.autoRotate: true; // for orbit controls
+settings.near = 0.01; // render clipping distances
 settings.far = 500;  // render clipping distances
-settings.cameraAngle = 45;
+settings.cameraAngle = 45; // field of view
 settings.cameraPos = [10,10,10];
 settings.orbitTarget = [0,0,0];
 

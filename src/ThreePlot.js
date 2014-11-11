@@ -9,9 +9,9 @@ var ThreePlot = {
         // set Max and Min helper
         function setMaxMin (data) {
             for (var j = 0; j < data.length; j++) {
-                var px = data[j][0],
-                    py = data[j][1],
-                    pz = data[j][2];
+                var px = data[j][0] || data[j].x,
+                    py = data[j][1] || data[j].y,
+                    pz = data[j][2] || data[j].z;
                 // set max
                 res.maxX = px > res.maxX ? px : res.maxX;
                 res.maxY = py > res.maxY ? py : res.maxY;
@@ -63,9 +63,11 @@ var ThreePlot = {
                 M.distX,
                 M.distY,
                 M.distZ
-            ),
+            ).multiplyScalar(3),
             cameraPosn = relativeCameraPosn.add(M.center);
-        plotCtx.camera.position = cameraPosn;
+        plotCtx.camera.position.x = cameraPosn.x;
+        plotCtx.camera.position.y = cameraPosn.y;
+        plotCtx.camera.position.z = cameraPosn.z;
         plotCtx.camera.lookAt(M.center);
         plotCtx.controls.target.copy(M.center); // for orbit
     },
@@ -95,6 +97,8 @@ var ThreePlot = {
                    geometry.vertices.push(xyz);
                 }
                 var traj = new THREE.Line(geometry, material);
+                // prevent culling (could be inefficient for many lines)
+                traj.frustumCulled = false;
 
                 // iplot
                 iplot.threeObj = traj;
@@ -176,15 +180,11 @@ var ThreePlot = {
         settings.showAxes    = userSettings.showAxes    || true; // TODO
         settings.autoRotate  = userSettings.autoRotate  || false;
         settings.ctrlType    = userSettings.ctrlType    || "orbit";
-        settings.near        = userSettings.near        || 0.1;
+        settings.near        = userSettings.near        || 0.005;
         settings.far         = userSettings.far         || 500;
         settings.cameraAngle = userSettings.cameraAngle || 45;
         settings.cameraPosn  = userSettings.cameraPosn  || ZERO;
         settings.orbitTarget = userSettings.orbitTarget || ZERO
-        // Used below:
-        // userSettings.cameraPosn
-        // userSettings.orbitTarget
-        // TODO missing some options?
 
         /*\
         |*| Declare variables
@@ -270,10 +270,10 @@ var ThreePlot = {
 
         // retarget camera (helpful for animations)
         plotTarget.addEventListener(
-            'keydown',
+            'dblclick',
             (function (plotCtx) {
                 return function (e) {
-                    if (e.char === 'r') ThreePlot.retargetCamera(plotCtx);
+                    ThreePlot.retargetCamera(plotCtx);
                 }
             })(plotCtx),
             false
@@ -309,6 +309,9 @@ var ThreePlot = {
 
         // begin animating
         ThreePlot.animate(plotCtx);
+
+        // Debug
+        pc = plotCtx;
 
         // ---------------------
         // Helpers

@@ -29,7 +29,7 @@ var myLine = {
 ThreePlot.plot(myLine, targetHtmlElement)
 ```
 
-ThreePlot will figure the rest out. There are many customizable options, check out `/examples/api-overview.js` if you want a quick reference to them.
+ThreePlot will figure the rest out. There are many customizable options, check out `/examples/api-overview.js` if you want a quick reference to them. A useful tip: double-click on the plot to retarget the camera (this is useful for animations).
 
 Examples
 ---------
@@ -40,3 +40,12 @@ Notes
 ------
 
 * For efficiency reasons there is a finite size to the trajectories being animated. A finite size buffer is created to hold the geometry being plotted.
+
+TODO
+-----
+
+* Labels and axes
+
+* Surface plotting
+
+* GUI with settings

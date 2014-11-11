@@ -8,29 +8,37 @@
         margin: 0px;
         overflow: hidden;
     }
-    #container {
-        width: 800px;
-        height: 600px;
+    #container1 {
+        width: 500px;
+        height: 500px;
+        display: inline-block;
+    }
+    #container2 {
+        width: 300px;
+        height: 300px;
+        display: inline-block;
     }
     </style>
 </head>
 <body>
-    <div id="container"></div>
+    <div id="container1"></div>
+    <div id="container2"></div>
+    <div><p>Double-click to retarget camera</p></div>
     <!--
     -->
     <script src="/vendor/js/threejs/three.min.js"></script>
     <script src="/vendor/js/threejs/controls/FlyControls.js"></script>
     <script src="/vendor/js/threejs/controls/OrbitControls.js"></script>
-    <script src="/vendor/js/threejs/Detector.js"></script>
     <script src="/src/ThreePlot.js"></script>
     <script type="text/javascript">
-    var staticPlot = {
+
+    var square = {
         "color": "#ee1155",
         "type": "lineplot",
         "data": [ [0,0,0], [1,0,0], [1,0,1], [0,0,1], [0,0,0] ]
     };
 
-    var anim = {
+    var animHelix = {
         "color": "#55ee11",
         "type": "lineplot",
         "animated": true,
@@ -38,15 +46,36 @@
         "xyz": [0,1,0], // initial condition
         "step": function () {
             var t = this.t;
-            var p = [Math.sin(t), Math.cos(t), t/30];
+            var p = [Math.sin(t), Math.cos(t), t/10];
             this.t += this.dt;
+            this.t = this.t % 100;
             return p;
         },
         "t": 0,
         "dt": 1/50
     };
 
-    ThreePlot.plot([ staticPlot, anim ], document.getElementById("container"));
+    var animWireSphere = {
+        "color": "#55ddff",
+        "type": "lineplot",
+        "animated": true,
+        "trajLength": 1000, // buffered geometry is fixed size
+        "xyz": [0,0,0], // initial condition
+        "step": function () {
+            var phi   = 2*Math.PI*Math.random(),
+                theta = Math.PI*Math.random(),
+                x     = Math.cos(phi)*Math.sin(theta),
+                y     = Math.sin(phi)*Math.sin(theta),
+                z     = Math.cos(theta);
+            return [x,y,z];
+        },
+        "r": 0,
+        "phi":  0,
+        "theta": 0,
+    };
+
+    ThreePlot.plot([ square, animHelix ], document.getElementById("container1"));
+    ThreePlot.plot([ animWireSphere ], document.getElementById("container2"));
     </script>
 </body>
 </html>
