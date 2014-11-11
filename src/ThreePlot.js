@@ -310,9 +310,6 @@ var ThreePlot = {
         // begin animating
         ThreePlot.animate(plotCtx);
 
-        // Debug
-        pc = plotCtx;
-
         // ---------------------
         // Helpers
 
