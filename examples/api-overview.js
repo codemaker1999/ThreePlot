@@ -42,39 +42,6 @@ var anim = {
 plots.push(anim);
 
 /*\
-|*|    Surface plot example
-\*/
-
-// WIP: UGLY API
-
-// use 2D array to hold data for unambiguous polygon generation ???
-var surfPoints = [];
-for (var i = 10; i < 80; i+=70/200) {
-    var row = [];
-    for (var j = 11; j < 80; j+=69/200) {
-        // make some sinusoidal blanket thing
-        row.push([i,j,Math.sin(i)+Math.sin(j)]);
-    };
-    surfPoints.push(row);
-};
-var surf = {
-    // optional keys
-    "label": "Surface Plot",
-    // required keys
-    "type": "surfaceplot",
-    // type-specific keys
-    "data":  surfPoints,
-    "up":    "z"
-};
-plots.push(surf);
-
-/*\
-|*|    Graph example
-\*/
-
-// TODO
-
-/*\
 |*|    Global Settings
 \*/
 
@@ -95,5 +62,5 @@ settings.orbitTarget = [0,0,0];
 |*|    Run
 \*/
 
-ThreePlot.plot([ plots[0], plots[1] ], document.getElementById("plotTarget_1"), settings);
-ThreePlot.plot([ plots[2] ], document.getElementById("plotTarget_2"), settings);
+ThreePlot.plot([ plots[0] ], document.getElementById("plotTarget_1"), settings);
+ThreePlot.plot([ plots[1] ], document.getElementById("plotTarget_2"), settings);
