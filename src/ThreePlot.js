@@ -9,9 +9,9 @@ var ThreePlot = {
         // set Max and Min helper
         function setMaxMin (data) {
             for (var j = 0; j < data.length; j++) {
-                var px = p.data[j][0],
-                    py = p.data[j][1],
-                    pz = p.data[j][2];
+                var px = data[j][0],
+                    py = data[j][1],
+                    pz = data[j][2];
                 // set max
                 res.maxX = px > res.maxX ? px : res.maxX;
                 res.maxY = py > res.maxY ? py : res.maxY;
@@ -47,7 +47,11 @@ var ThreePlot = {
         res.distX   = (res.maxX - res.minX)/2;
         res.distY   = (res.maxY - res.minY)/2;
         res.distZ   = (res.maxZ - res.minZ)/2;
-        res.maxDist = Math.sqrt( Math.pow(res.distX, 2) + Math.pow(res.distY,2) + Math.pow(res.distZ, 2));
+        res.maxDist = Math.sqrt(
+            Math.pow(res.distX, 2) +
+            Math.pow(res.distY, 2) +
+            Math.pow(res.distZ, 2)
+        );
         res.center  = new THREE.Vector3(res.midX, res.midY, res.midZ);
 
         return res;
@@ -56,9 +60,9 @@ var ThreePlot = {
     "retargetCamera": function (plotCtx) {
         var M = ThreePlot.getMetrics(plotCtx),
             relativeCameraPosn = new THREE.Vector3(
-                METRICS.distX,
-                METRICS.distY,
-                METRICS.distZ
+                M.distX,
+                M.distY,
+                M.distZ
             ),
             cameraPosn = relativeCameraPosn.add(M.center);
         plotCtx.camera.position = cameraPosn;
@@ -86,7 +90,7 @@ var ThreePlot = {
 
                 // ThreeJS
                 geometry.dynamic = true;
-                var xyz = THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
+                var xyz = new THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
                 for (var j=0; j<plot.trajLength; j++) {
                    geometry.vertices.push(xyz);
                 }
@@ -107,7 +111,7 @@ var ThreePlot = {
             } else {
 
                 for (var j=0; j<plot.data.length; j++) {
-                    var xyz = THREE.Vector3( plot.data[j][0], plot.data[j][1], plot.data[j][2]);
+                    var xyz = new THREE.Vector3( plot.data[j][0], plot.data[j][1], plot.data[j][2]);
                     geometry.vertices.push(xyz);
                 }
                 
@@ -124,11 +128,11 @@ var ThreePlot = {
             
             // -------------------------------------------------------
             case "surfaceplot":
+            throw "Unsupported Plot Type: Surface plotting coming soon"
             if (plot.animated) {
                 //
             } else {
-                // don't change geometry
-                iplot.update = function () {};
+                //function () {};
             };
             break;
 
@@ -162,11 +166,12 @@ var ThreePlot = {
         "Sets up all the ThreeJS machinery and starts animation loop";
 
         /*\
-        |*| Settings
+        |*| Unpack settings
         \*/
 
         var userSettings = arguments[2] || {};
-        var settings = {};
+        var settings     = {};
+        var ZERO         = new THREE.Vector3(0,0,0);
         settings.showGrid    = userSettings.showGrid    || true; // TODO
         settings.showAxes    = userSettings.showAxes    || true; // TODO
         settings.autoRotate  = userSettings.autoRotate  || false;
@@ -174,6 +179,8 @@ var ThreePlot = {
         settings.near        = userSettings.near        || 0.1;
         settings.far         = userSettings.far         || 500;
         settings.cameraAngle = userSettings.cameraAngle || 45;
+        settings.cameraPosn  = userSettings.cameraPosn  || ZERO;
+        settings.orbitTarget = userSettings.orbitTarget || ZERO
         // Used below:
         // userSettings.cameraPosn
         // userSettings.orbitTarget
@@ -195,10 +202,9 @@ var ThreePlot = {
             CAMANGLE = settings.cameraAngle,
             CTRLTYPE = settings.ctrlType,
             AUTOROT  = settings.autoRotate,
-            ZERO     = THREE.Vector3(0,0,0),
             // ThreeJS variables
-            orbitTarget = userSettings.orbitTarget || ZERO,
-            cameraPosn = userSettings.cameraPosn || ZERO,
+            orbitTarget = settings.orbitTarget,
+            cameraPosn = settings.cameraPosn,
             renderer,
             scene,
             camera,
@@ -282,7 +288,7 @@ var ThreePlot = {
             // add/parse color
             p.color = p.color ? new THREE.Color(p.color) : new THREE.Color().setHSL(i/plots.length,80/100,65/100);
             // convert
-            iplots.push( this.parseIPlot(p, scene) );
+            iplots.push( ThreePlot.parseIPlot(p, scene) );
         };
 
         // ---------------------
@@ -296,7 +302,7 @@ var ThreePlot = {
         plotCtx.iplots = iplots;
 
         // fix camera
-        this.retargetCamera(plotCtx);
+        ThreePlot.retargetCamera(plotCtx);
 
         // let there be light
         initLights(plotCtx);
@@ -309,7 +315,7 @@ var ThreePlot = {
 
         function initLights(plotCtx) {
             // TODO directional light? attach to camera? need to change this!
-            var METRICS = this.getMetrics(plotCtx);
+            var METRICS = ThreePlot.getMetrics(plotCtx);
             var p = METRICS.center;
             var distance = METRICS.maxDist;
             var light = new THREE.PointLight( 0xffffff, 1.5, 1.5 * distance );
