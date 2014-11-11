@@ -27,7 +27,7 @@ var anim = {
     "type": "lineplot",
     // type-specific keys
     "animated": true,
-    "trajLength": 10000, // buffered geometry is fixed size
+    "lineLength": 10000, // buffered geometry is fixed size
     "xyz": [0,1,0], // initial condition
     "step": function () {
         var t = this.t;

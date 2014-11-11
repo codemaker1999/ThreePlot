@@ -18,18 +18,44 @@ There are only two steps to getting started.
 
 2. create a valid plottable object, and provide a DIV or something for the plot to live in
 
-There are several types of plottable objects, including lines in 3D space, animated 3D lines, and surface plots (coming soon). For example, say you wanted to create an interactive 3D line plot:
+There are several types of plottable objects, including lines in 3D space, animated 3D lines, and surface plots (coming soon). For example, to make an interactive plot containing a triangle and a square, you could write:
 
 ```js
-var myLine = {
+var triangle = {
     "type": "lineplot",
-    "data": [[0,0,0], [0,0,1], [0,1,0]]
-}
+    "data": [[0,0,0], [0,0,1], [0, 0.5, 0.5], [0,0,0]]
+};
 
-ThreePlot.plot(myLine, targetHtmlElement)
+var square = {
+    "type": "lineplot",
+    "data": [[0,0,0], [1,0,0], [1,1,0], [0,1,0], [0,0,0]]
+};
+
+ThreePlot.plot([ triangle, square ], targetHtmlElement);
 ```
 
-ThreePlot will figure the rest out. There are many customizable options, check out `/examples/api-overview.js` if you want a quick reference to them. A useful tip: double-click on the plot to retarget the camera (this is useful for animations).
+and to create an animated trajectory:
+
+```js
+var meshCube = {
+    "type": "lineplot",
+    "animated": true,
+    "lineLength": 300, // see "Notes" below
+    "xyz": [0,0,0], // initial point
+    // The step function must return the next point each frame.
+    // Here, it just returns a random point in the unit cube
+    "step": function () {
+        var x = Math.random(),
+            y = Math.random(),
+            z = Math.random();
+        return [x,y,z];
+    },
+};
+
+ThreePlot.plot([ meshCube ], targetHtmlElement);
+```
+
+ThreePlot will figure the rest out. There are many customizable options, check out `/examples/api-overview.js` if you want a quick reference to them. Tip: double-click on the plot to retarget the camera (this is useful for animations).
 
 Examples
 ---------
@@ -39,7 +65,7 @@ Examples
 Notes
 ------
 
-* For efficiency reasons there is a finite size to the trajectories being animated. A finite size buffer is created to hold the geometry being plotted.
+* For efficiency reasons there is a finite length to the trajectories being animated (A finite size buffer is created to hold the points being plotted), so animations will eventually start to disappear sequentially from where they start (they will continue to grow at the same rate, of course).
 
 TODO
 -----

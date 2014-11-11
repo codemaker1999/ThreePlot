@@ -44,7 +44,7 @@
         "color": "#55ee11",
         "type": "lineplot",
         "animated": true,
-        "trajLength": 10000, // buffered geometry is fixed size
+        "lineLength": 10000, // buffered geometry is fixed size
         "xyz": [0,1,0], // initial condition
         "step": function () {
             var t = this.t;
@@ -59,10 +59,9 @@
 
     // 3d animation
     var animWireSphere = {
-        // "color": "#55ddff",
         "type": "lineplot",
         "animated": true,
-        "trajLength": 300, // buffered geometry is fixed size
+        "lineLength": 300, // buffered geometry is fixed size
         "xyz": [0,0,0], // initial condition
         "step": function () {
             var phi   = 2*Math.PI*Math.random(),

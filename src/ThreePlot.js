@@ -100,7 +100,7 @@ var ThreePlot = {
                 // ThreeJS
                 geometry.dynamic = true;
                 var xyz = new THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
-                for (var j=0; j<plot.trajLength; j++) {
+                for (var j=0; j<plot.lineLength; j++) {
                    geometry.vertices.push(xyz);
                 }
                 var traj = new THREE.Line(geometry, material);
