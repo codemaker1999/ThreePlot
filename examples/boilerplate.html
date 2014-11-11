@@ -32,12 +32,14 @@
     <script src="/src/ThreePlot.js"></script>
     <script type="text/javascript">
 
+    // standard line plot
     var square = {
         "color": "#ee1155",
         "type": "lineplot",
         "data": [ [0,0,0], [1,0,0], [1,0,1], [0,0,1], [0,0,0] ]
     };
 
+    // Parametric plot animation
     var animHelix = {
         "color": "#55ee11",
         "type": "lineplot",
@@ -55,11 +57,12 @@
         "dt": 1/50
     };
 
+    // 3d animation
     var animWireSphere = {
         "color": "#55ddff",
         "type": "lineplot",
         "animated": true,
-        "trajLength": 1000, // buffered geometry is fixed size
+        "trajLength": 300, // buffered geometry is fixed size
         "xyz": [0,0,0], // initial condition
         "step": function () {
             var phi   = 2*Math.PI*Math.random(),
