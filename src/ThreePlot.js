@@ -65,11 +65,18 @@ var ThreePlot = {
                 M.distZ
             ).multiplyScalar(3),
             cameraPosn = relativeCameraPosn.add(M.center);
+        // Camera
         plotCtx.camera.position.x = cameraPosn.x;
         plotCtx.camera.position.y = cameraPosn.y;
         plotCtx.camera.position.z = cameraPosn.z;
         plotCtx.camera.lookAt(M.center);
         plotCtx.controls.target.copy(M.center); // for orbit
+        // Light
+        var light = new THREE.PointLight( 0xffffff, 1.5, 3 * M.maxDist );
+        light.position = M.center;
+        plotCtx.scene.remove(plotCtx.light);
+        plotCtx.light = light;
+        plotCtx.scene.add( light );
     },
 
     "parseIPlot": function (plot, scene) {
@@ -202,18 +209,10 @@ var ThreePlot = {
             CAMANGLE = settings.cameraAngle,
             CTRLTYPE = settings.ctrlType,
             AUTOROT  = settings.autoRotate,
-            // ThreeJS variables
+
             orbitTarget = settings.orbitTarget,
             cameraPosn = settings.cameraPosn,
-            renderer,
-            scene,
-            camera,
-            controls,
-            // containers
-            plotCtx = {},
-            lights = [],
-            morphs = [],
-            skins = [];
+            plotCtx = {};
 
         /*\
         |*| Set up ThreeJS
@@ -222,7 +221,7 @@ var ThreePlot = {
         // ---------------------
         // Renderer
 
-        renderer = new THREE.WebGLRenderer({
+        var renderer = new THREE.WebGLRenderer({
             // scale: SCALE,
             // brightness: 2,
             antialias: true
@@ -238,12 +237,12 @@ var ThreePlot = {
         // ---------------------
         // Scene
 
-        scene = new THREE.Scene();
+        var scene = new THREE.Scene();
 
         // ---------------------
         // Camera
 
-        camera = new THREE.PerspectiveCamera(CAMANGLE, WIDTH/HEIGHT, NEAR, FAR);
+        var camera = new THREE.PerspectiveCamera(CAMANGLE, WIDTH/HEIGHT, NEAR, FAR);
         camera.position.x = cameraPosn.x;
         camera.position.y = cameraPosn.y;
         camera.position.z = cameraPosn.z;
@@ -254,6 +253,7 @@ var ThreePlot = {
         // ---------------------
         // Controls
 
+        var controls;
         if (CTRLTYPE === "fly") {
             controls = new THREE.FlyControls( camera );
             controls.dragToLook = true;
@@ -264,20 +264,6 @@ var ThreePlot = {
             // TODO maybe pause rotation on mouse down or something
             controls.autoRotate = AUTOROT;
         }
-
-        // ---------------------
-        // Events
-
-        // retarget camera (helpful for animations)
-        plotTarget.addEventListener(
-            'dblclick',
-            (function (plotCtx) {
-                return function (e) {
-                    ThreePlot.retargetCamera(plotCtx);
-                }
-            })(plotCtx),
-            false
-        );
         
         // ---------------------
         // Parse plot objects
@@ -292,35 +278,43 @@ var ThreePlot = {
         };
 
         // ---------------------
+        // Light
+
+        var light = new THREE.PointLight( 0xffffff, 1.5, 60 );
+        light.position = ZERO;
+        scene.add( light );
+
+        // ---------------------
         // Animate
 
         // create plot context
+        var plotCtx = {};
         plotCtx.renderer = renderer;
         plotCtx.scene = scene;
         plotCtx.camera = camera;
         plotCtx.controls = controls;
         plotCtx.iplots = iplots;
+        plotCtx.light = light;
 
         // fix camera
         ThreePlot.retargetCamera(plotCtx);
-
-        // let there be light
-        initLights(plotCtx);
 
         // begin animating
         ThreePlot.animate(plotCtx);
 
         // ---------------------
-        // Helpers
+        // Events
 
-        function initLights(plotCtx) {
-            // TODO directional light? attach to camera? need to change this!
-            var METRICS = ThreePlot.getMetrics(plotCtx);
-            var p = METRICS.center;
-            var distance = METRICS.maxDist;
-            var light = new THREE.PointLight( 0xffffff, 1.5, 1.5 * distance );
-            light.position = p;
-            scene.add( light );
-        }
+        // retarget camera (helpful for animations)
+        plotTarget.addEventListener(
+            'dblclick',
+            (function (plotCtx) {
+                return function (e) {
+                    ThreePlot.retargetCamera(plotCtx);
+                }
+            })(plotCtx),
+            false
+        );
+
     },
 }

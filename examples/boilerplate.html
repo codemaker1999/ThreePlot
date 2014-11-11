@@ -59,7 +59,7 @@
 
     // 3d animation
     var animWireSphere = {
-        "color": "#55ddff",
+        // "color": "#55ddff",
         "type": "lineplot",
         "animated": true,
         "trajLength": 300, // buffered geometry is fixed size
@@ -72,9 +72,6 @@
                 z     = Math.cos(theta);
             return [x,y,z];
         },
-        "r": 0,
-        "phi":  0,
-        "theta": 0,
     };
 
     ThreePlot.plot([ square, animHelix ], document.getElementById("container1"));
