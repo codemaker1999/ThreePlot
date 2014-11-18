@@ -67,6 +67,10 @@ Notes
 
 * For efficiency reasons there is a finite length to the trajectories being animated (A finite size buffer is created to hold the points being plotted), so animations will eventually start to disappear sequentially from where they start (they will continue to grow at the same rate, of course).
 
+* The `ThreePlot.plot` function returns a random string ID that is attached to the corresponding plot object `ThreePlot.activePlots[i].id`
+
+* You can add your own arbitrary objects to a scene by creating the ThreeJS objects and adding them to the scene via `ThreePlot.activePlots[i].scene`. To animate your objects through the ThreePlot render loop, create an object that has an `update()` method (called every frame) to update your objects, and push it to `ThreePlot.activePlots[i].iplots`.
+
 TODO
 -----
 

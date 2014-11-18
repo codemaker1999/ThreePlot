@@ -1,5 +1,7 @@
 var ThreePlot = {
 
+    "activePlots": [],
+
     "getMetrics": function (plotCtx) {
         var res = {
             "maxX": 0, "maxY": 0, "maxZ": 0,
@@ -139,7 +141,7 @@ var ThreePlot = {
             
             // -------------------------------------------------------
             case "surfaceplot":
-            throw "Unsupported Plot Type: Surface plotting coming soon"
+            throw "Unsupported Plot Type: Surface plotting coming soon";
             if (plot.animated) {
                 //
             } else {
@@ -155,22 +157,24 @@ var ThreePlot = {
 
     },
 
-    "animate": function (plotCtx) {
-        "Plots a plotCtx object";
+    "animate": function () {
+        "Plot plotCtx objects";
 
-        // loop
-        requestAnimationFrame(function () {
-            ThreePlot.animate(plotCtx);
-        });
+        for (var i = 0; i < ThreePlot.activePlots.length; i++) {
+            var plotCtx = ThreePlot.activePlots[i];
 
-        // increment iterator plot objects
-        for (var i = 0; i < plotCtx.iplots.length; i++) {
-            plotCtx.iplots[i].update();
+            // increment iterator plot objects
+            for (var i = 0; i < plotCtx.iplots.length; i++) {
+                plotCtx.iplots[i].update();
+            };
+
+            // update controls and render
+            plotCtx.controls.update( 1 );
+            plotCtx.renderer.render( plotCtx.scene, plotCtx.camera );
         };
 
-        // update controls and render
-        plotCtx.controls.update( 1 );
-        plotCtx.renderer.render( plotCtx.scene, plotCtx.camera );
+        // loop
+        requestAnimationFrame( ThreePlot.animate );
     },
 
     "plot": function(plots, plotTarget) {
@@ -295,12 +299,10 @@ var ThreePlot = {
         plotCtx.controls = controls;
         plotCtx.iplots = iplots;
         plotCtx.light = light;
+        plotCtx.id = Math.random().toString(36).slice(2); // random alpha-numeric
 
         // fix camera
         ThreePlot.retargetCamera(plotCtx);
-
-        // begin animating
-        ThreePlot.animate(plotCtx);
 
         // ---------------------
         // Events
@@ -316,5 +318,10 @@ var ThreePlot = {
             false
         );
 
+        ThreePlot.activePlots.push(plotCtx);
+        return plotCtx.id;
     },
 }
+
+// Start main loop
+ThreePlot.animate();
