@@ -180,6 +180,11 @@ ThreePlot = {
     "plot": function(plots, plotTarget) {
         "Set up all the ThreeJS machinery";
 
+        // SPECIFIC TO GH-BRANCHES BEGIN
+        if (!plotTarget) alert("Invalid plot target. Please change it " +
+            "to ThreePlot.plot([ ... ], document.getElementById('plot'))");
+        // END
+
         /*\
         |*| Unpack settings
         \*/

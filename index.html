@@ -28,12 +28,47 @@
     </style>
 </head>
 <body>
-    <div id="editor">var staticPlot = {
-    "type": "lineplot",
-    "data": [ [0,0,0], [1,0,0], [1,0,1], [0,0,1], [0,0,0] ]
-};
+    <div id="editor">// standard line plot
+    var square = {
+        "color": "#ee1155",
+        "type": "lineplot",
+        "data": [ [0,0,0], [1,0,0], [1,0,1], [0,0,1], [0,0,0] ]
+    };
 
-ThreePlot.plot([ staticPlot ], document.getElementById("plot"));</div>
+    // Parametric plot animation
+    var animHelix = {
+        "color": "#55ee11",
+        "type": "lineplot",
+        "animated": true,
+        "lineLength": 10000, // buffered geometry is fixed size
+        "xyz": [0,1,0], // initial condition
+        "step": function () {
+            var t = this.t;
+            var p = [Math.sin(t), Math.cos(t), t/10];
+            this.t += 1/50;
+            this.t = this.t % 100;
+            return p;
+        },
+        "t": 0,
+    };
+
+    // 3d animation
+    var animWireSphere = {
+        "type": "lineplot",
+        "animated": true,
+        "lineLength": 300, // buffered geometry is fixed size
+        "xyz": [0,0,0], // initial condition
+        "step": function () {
+            var phi   = 2*Math.PI*Math.random(),
+                theta = Math.PI*Math.random(),
+                x     = Math.cos(phi)*Math.sin(theta),
+                y     = Math.sin(phi)*Math.sin(theta),
+                z     = Math.cos(theta);
+            return [x,y,z];
+        },
+    };
+
+    ThreePlot.plot([ square, animHelix, animWireSphere ], document.getElementById("plot"));</div>
     <div id="plot"></div>
     <button id="run-btn" onclick="run()">Run</button>
     <!--
