@@ -44,13 +44,18 @@ var plots = [square, animHelix, animWireSphere];
 var n  = plots.length;
 var nh = Math.ceil(Math.sqrt(n));
 var nw = Math.ceil(Math.sqrt(n));
+var w  = $(document).width() / nw;
+var h  = $(document).height() / nh;
 
 for (var i = 0; i < n; i++) {
     var p = plots[i];
-    $("#plots").append('<div class="container"></div>');
-    $(".container").css({
-        "width":  (100/nw).toString()+"vw",
-        "height": (100/nh).toString()+"vh",
+    $("#plots").append('<div id="plot'+i+'" class="container"></div>');
+    $("#plot"+i).css({
+        "width":    "" + w + "px",
+        "height":   "" + h + "px",
+        "position": "absolute",
+        "left":     "" + w * (i % nw) + "px",
+        "top":      "" + h * Math.floor(i/nw) + "px",
     });
-    ThreePlot.plot( [ p ], $(".container")[0] );
+    ThreePlot.plot( [ p ], $("#plot"+i)[0] );
 };

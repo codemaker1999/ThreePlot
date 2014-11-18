@@ -1,4 +1,4 @@
-var ThreePlot = {
+ThreePlot = {
 
     "activePlots": [],
 
@@ -99,14 +99,13 @@ var ThreePlot = {
             
             if (plot.animated) {
 
-                // ThreeJS
                 geometry.dynamic = true;
                 var xyz = new THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
                 for (var j=0; j<plot.lineLength; j++) {
                    geometry.vertices.push(xyz);
                 }
                 var traj = new THREE.Line(geometry, material);
-                // prevent culling (could be inefficient for many lines)
+                // prevent culling (could be inefficient for lots of lines)
                 traj.frustumCulled = false;
 
                 // iplot
@@ -127,12 +126,11 @@ var ThreePlot = {
                     var xyz = new THREE.Vector3( plot.data[j][0], plot.data[j][1], plot.data[j][2]);
                     geometry.vertices.push(xyz);
                 }
-                
                 var traj = new THREE.Line(geometry, material);
-
-                // don't change geometry
                 iplot.threeObj = traj;
+                // don't change geometry
                 iplot.update = function () {};
+
             };
 
             scene.add(traj);
@@ -160,12 +158,14 @@ var ThreePlot = {
     "animate": function () {
         "Plot plotCtx objects";
 
-        for (var i = 0; i < ThreePlot.activePlots.length; i++) {
-            var plotCtx = ThreePlot.activePlots[i];
+        var ap = ThreePlot.activePlots;
+
+        for (var i = 0; i < ap.length; i++) {
+            var plotCtx = ap[i];
 
             // increment iterator plot objects
-            for (var i = 0; i < plotCtx.iplots.length; i++) {
-                plotCtx.iplots[i].update();
+            for (var j = 0; j < plotCtx.iplots.length; j++) {
+                plotCtx.iplots[j].update();
             };
 
             // update controls and render
@@ -178,7 +178,7 @@ var ThreePlot = {
     },
 
     "plot": function(plots, plotTarget) {
-        "Sets up all the ThreeJS machinery and starts animation loop";
+        "Set up all the ThreeJS machinery";
 
         /*\
         |*| Unpack settings
@@ -318,10 +318,12 @@ var ThreePlot = {
             false
         );
 
+        // ---------------------
+        // Plot statics and return
+        plotCtx.renderer.render( plotCtx.scene, plotCtx.camera );
         ThreePlot.activePlots.push(plotCtx);
         return plotCtx.id;
     },
 }
 
-// Start main loop
 ThreePlot.animate();

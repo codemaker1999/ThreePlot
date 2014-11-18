@@ -49,12 +49,11 @@
         "step": function () {
             var t = this.t;
             var p = [Math.sin(t), Math.cos(t), t/10];
-            this.t += this.dt;
+            this.t += 1/50;
             this.t = this.t % 100;
             return p;
         },
         "t": 0,
-        "dt": 1/50
     };
 
     // 3d animation
@@ -75,6 +74,7 @@
 
     ThreePlot.plot([ square, animHelix ], document.getElementById("container1"));
     ThreePlot.plot([ animWireSphere ], document.getElementById("container2"));
+
     </script>
 </body>
 </html>
