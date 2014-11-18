@@ -57,6 +57,7 @@ var animHelix = {
     "animated": true,
     "lineLength": 10000, // buffered geometry is fixed size
     "xyz": [-2,-1,0], // initial condition
+    // The step function must return the next point each frame.
     "step": function () {
         var t = this.t;
         var p = [Math.sin(t) - 2, Math.cos(t) - 2, t/10];
@@ -67,24 +68,24 @@ var animHelix = {
     "t": 0,
 };
 
-// 3d animation
-var animWireSphere = {
+// Other 3D animation
+var meshCube = {
     "type": "lineplot",
     "animated": true,
-    "lineLength": 300, // buffered geometry is fixed size
-    "xyz": [2,2,0], // initial condition
+    "lineLength": 300, // see "Notes" below
+    "xyz": [2,2,0], // initial point
+    // The step function must return the next point each frame.
+    // Here, it just returns a random point in the unit cube
     "step": function () {
-        var phi   = 2*Math.PI*Math.random(),
-            theta = Math.PI*Math.random(),
-            x     = 2 + Math.cos(phi)*Math.sin(theta),
-            y     = 2 + Math.sin(phi)*Math.sin(theta),
-            z     = Math.cos(theta);
+        var x = 2 + Math.random(),
+            y = 2 + Math.random(),
+            z = Math.random();
         return [x,y,z];
     },
 };
 
 ThreePlot.plot(
-    [ square, animHelix, animWireSphere ],
+    [ square, animHelix, meshCube ],
     document.getElementById("plot")
 );</div>
     <div id="plot"></div>
