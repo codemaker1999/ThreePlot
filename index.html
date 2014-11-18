@@ -42,6 +42,9 @@ Notes
   replace the contents of the plot
 * The plot target is a div with id "plot"
 
+Github Page
+https://github.com/codemaker1999/ThreePlot
+
 */
 
 // standard line plot
@@ -58,6 +61,7 @@ var animHelix = {
     "lineLength": 10000, // animations must be fixed length
     "xyz": [-2,-1,0], // initial condition
     // The step function must return the next point each frame.
+    // Here, it creates a spiral
     "step": function () {
         var t = this.t;
         var p = [Math.sin(t) - 2, Math.cos(t) - 2, t/10];
@@ -72,7 +76,7 @@ var animHelix = {
 var meshCube = {
     "type": "lineplot",
     "animated": true,
-    "lineLength": 300, // see "Notes" below
+    "lineLength": 300, // animations must be fixed length
     "xyz": [2,2,0], // initial point
     // The step function must return the next point each frame.
     // Here, it just returns a random point in the unit cube
