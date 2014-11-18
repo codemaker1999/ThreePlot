@@ -28,7 +28,7 @@
     </style>
 </head>
 <body>
-    <div id="editor">/*
+    <div id="editor" hidden>/*
 
 This is an live demo of ThreePlot.
 
@@ -106,6 +106,7 @@ ThreePlot.plot(
         var editor = ace.edit("editor");
         editor.setTheme("ace/theme/monokai");
         editor.getSession().setMode("ace/mode/javascript");
+        document.getElementById("editor").hidden = false;
 
         function run () {
             ThreePlot.activePlots = [];
