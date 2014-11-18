@@ -57,6 +57,8 @@ ThreePlot.plot([ meshCube ], targetHtmlElement);
 
 ThreePlot will figure the rest out. There are many customizable options, check out `/examples/api-overview.js` if you want a quick reference to them. Tip: double-click on the plot to retarget the camera (this is useful for animations).
 
+*Try it out at http://codemaker1999.github.io/ThreePlot*
+
 Examples
 ---------
 
