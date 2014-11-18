@@ -46,7 +46,7 @@ Notes
 
 // standard line plot
 var square = {
-    "color": "#ee1155",
+    "color": "#ee1155", // optional
     "type": "lineplot",
     "data": [ [0,0,0], [1,0,0], [1,0,1], [0,0,1], [0,0,0] ]
 };
@@ -55,7 +55,7 @@ var square = {
 var animHelix = {
     "type": "lineplot",
     "animated": true,
-    "lineLength": 10000, // buffered geometry is fixed size
+    "lineLength": 10000, // animations must be fixed length
     "xyz": [-2,-1,0], // initial condition
     // The step function must return the next point each frame.
     "step": function () {
@@ -65,7 +65,7 @@ var animHelix = {
         this.t = this.t % 100;
         return p;
     },
-    "t": 0,
+    "t": 0, // you can use custom keys
 };
 
 // Other 3D animation
