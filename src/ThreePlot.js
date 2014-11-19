@@ -81,6 +81,46 @@ ThreePlot = {
         plotCtx.scene.add( light );
     },
 
+    "triangulate": function (plot) {
+        var geometry = new THREE.Geometry();
+        // add vertices
+        var wid = plot.data[0].length;
+        var hgt = plot.data.length;
+        var dy = (plot.max_j - plot.min_j)/hgt;
+        var dx = (plot.max_i - plot.min_i)/wid;
+        for (var j = 0; j < hgt; j++) {
+            for (var i = 0; i < wid; i++) {
+                var z = plot.data[j][i],
+                    v = new THREE.Vector3(i*dx, j*dy, z);
+                geometry.vertices.push(v);
+            }
+        };
+        // create triangles
+        var triangles = [];
+        for (var j = 0; j < hgt - 1; j++) {
+            for (var i = 0; i < wid - 1; i++) {
+                // up-left, up-right, etc. points
+                var ul = plot.data[j][i],
+                    ur = plot.data[j][i+1],
+                    dl = plot.data[j+1][i],
+                    dr = plot.data[j+1][i+1],
+                    ind_ul =     j*wid + i,
+                    ind_ur =     j*wid + (i+1),
+                    ind_dl = (j+1)*wid + i,
+                    ind_dr = (j+1)*wid + (i+1);
+                // create 2 faces from 4 points
+                geometry.faces.push(new THREE.Face3(
+                    ind_ul, ind_ur, ind_dl
+                ));
+                geometry.faces.push(new THREE.Face3(
+                    ind_ur, ind_dr, ind_dl
+                ));
+            };
+        };
+
+        return geometry;
+    }
+
     "parseIPlot": function (plot, scene) {
         "parse plottable object into an iterator that updates ThreeJS geometries";
 
@@ -94,17 +134,18 @@ ThreePlot = {
                 color: plot.color,
                 linewidth: 2
             });
-
-            var geometry = new THREE.Geometry();
+            var geometry = {};
+            var traj = {};
             
             if (plot.animated) {
 
+                geometry = new THREE.Geometry();
                 geometry.dynamic = true;
                 var xyz = new THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
                 for (var j=0; j<plot.lineLength; j++) {
                    geometry.vertices.push(xyz);
                 }
-                var traj = new THREE.Line(geometry, material);
+                traj = new THREE.Line(geometry, material);
                 // prevent culling (could be inefficient for lots of lines)
                 traj.frustumCulled = false;
 
@@ -122,11 +163,12 @@ ThreePlot = {
 
             } else {
 
+                geometry = new THREE.Geometry();
                 for (var j=0; j<plot.data.length; j++) {
                     var xyz = new THREE.Vector3( plot.data[j][0], plot.data[j][1], plot.data[j][2]);
                     geometry.vertices.push(xyz);
                 }
-                var traj = new THREE.Line(geometry, material);
+                traj = new THREE.Line(geometry, material);
                 iplot.threeObj = traj;
                 // don't change geometry
                 iplot.update = function () {};
@@ -139,12 +181,41 @@ ThreePlot = {
             
             // -------------------------------------------------------
             case "surfaceplot":
-            throw "Unsupported Plot Type: Surface plotting coming soon";
+
+            // forward declare for clarity
+            var material = new THREE.MeshBasicMaterial();//{
+            //     color: plot.color,
+            //     linewidth: 2
+            // });
+            var geometry = {};
+            var mesh = {};
+
             if (plot.animated) {
-                //
+                // TODO
+                alert("Surface animation not yet supported.")
+                throw "Plot Type Error: surface animation not yet supported";
             } else {
-                //function () {};
+
+                if (plot.function) { // type-check
+                    // TODO convert to the other plot type and triangulate()
+                    // var f = math.parse(plot["function"]).compile(math);
+                    throw "Syntax Error: this feature is not yet supported."
+                    throw "up";
+                } else {
+                    // var up = plot.up.indexOf(Math.max(plot.up));
+                    geometry = triangulate( plot );
+                    mesh = THREE.Mesh( geometry, material );
+                    iplot.threeObj = mesh;
+                    // don't change geometry
+                    iplot.update = function () {};
+                }
+
             };
+
+            // rotate to specified normal
+            // TODO
+            scene.add(mesh);
+
             break;
 
             // -------------------------------------------------------
