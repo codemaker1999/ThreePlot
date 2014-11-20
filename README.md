@@ -18,7 +18,7 @@ There are only two steps to getting started.
 
 2. create a valid plottable object, and provide a DIV or something for the plot to live in
 
-There are several types of plottable objects, including lines in 3D space, animated 3D lines, and surface plots (coming soon). For example, to make an interactive plot containing a triangle and a square, you could write:
+There are several types of plottable objects, including lines in 3D space, animated 3D lines, and surface plots. For example, to make an interactive plot containing a triangle and a square, you could write:
 
 ```js
 var triangle = {
@@ -62,7 +62,7 @@ ThreePlot will figure the rest out. There are many customizable options, check o
 Examples
 ---------
 
-* See files in `/examples`
+* See `/test/test.js` and files in `/examples`
 
 Notes
 ------
