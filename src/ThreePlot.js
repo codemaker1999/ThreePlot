@@ -2,7 +2,7 @@ ThreePlot = {
 
     "activePlots": [],
 
-    "getMetrics": function (plotCtx) {
+    "updateMetrics": function (plotCtx) {
         var res = {
             "maxX": 0, "maxY": 0, "maxZ": 0,
             "minX": 0, "minY": 0, "minZ": 0,
@@ -24,22 +24,11 @@ ThreePlot = {
                 res.minZ = pz < res.minZ ? pz : res.minZ;
             };
         }
-        
-        // type specific
+
+        // iterate        
         for (var i = 0; i < plotCtx.iplots.length; i++) {
-            var ip = plotCtx.iplots[i],
-                p  = ip.plot;
-            if (p.type === "lineplot") {
-                if (p.animated) {
-                    if (ip.threeObj) {
-                        setMaxMin( ip.threeObj.geometry.vertices );
-                    }
-                } else {
-                    setMaxMin( p.data );
-                }
-            } else if (p.type === "surfaceplot") {
-                // TODO
-            }
+            var ip = plotCtx.iplots[i];
+            setMaxMin( ip.threeObj.geometry.vertices );
         };
 
         // compute extra metrics
@@ -56,11 +45,12 @@ ThreePlot = {
         );
         res.center  = new THREE.Vector3(res.midX, res.midY, res.midZ);
 
+        plotCtx.metrics = res;
         return res;
     },
 
     "retargetCamera": function (plotCtx) {
-        var M = ThreePlot.getMetrics(plotCtx),
+        var M = plotCtx.metrics,
             relativeCameraPosn = new THREE.Vector3(
                 M.distX,
                 M.distY,
@@ -73,12 +63,29 @@ ThreePlot = {
         plotCtx.camera.position.z = cameraPosn.z;
         plotCtx.camera.lookAt(M.center);
         plotCtx.controls.target.copy(M.center); // for orbit
-        // Light
-        var light = new THREE.PointLight( 0xffffff, 1.5, 3 * M.maxDist );
-        light.position = M.center;
-        plotCtx.scene.remove(plotCtx.light);
-        plotCtx.light = light;
-        plotCtx.scene.add( light );
+    },
+
+    "updateLights": function (plotCtx) {
+        // add new lights to scene
+        // this creates a fairly homogenous light effect
+        // TODO ehhhhh this is a bit too quick and dirty?
+        var M = plotCtx.metrics;
+        var dLightX = new THREE.DirectionalLight( 0xffffff, 0.5 );
+        var dLightY = new THREE.DirectionalLight( 0xffffff, 0.5 );
+        var dLightZ = new THREE.DirectionalLight( 0xffffff, 0.5 );
+        dLightX.position.set(M.distX,0,0);
+        dLightY.position.set(0,M.distY,0);
+        dLightZ.position.set(0,0,M.distZ);
+        plotCtx.scene.add( dLightX );
+        plotCtx.scene.add( dLightY );
+        plotCtx.scene.add( dLightZ );
+        // remove old lights
+        var old = plotCtx.lights;
+        for (var i = 0; i < old.length; i++) {
+            plotCtx.scene.remove( old[i] );
+        };
+        // add new lights to plotCtx
+        plotCtx.lights = [dLightX, dLightY, dLightZ];
     },
 
     "triangulate": function (plot) {
@@ -90,8 +97,11 @@ ThreePlot = {
         var dx = (plot.max_i - plot.min_i)/wid;
         for (var j = 0; j < hgt; j++) {
             for (var i = 0; i < wid; i++) {
-                var z = plot.data[j][i],
-                    v = new THREE.Vector3(i*dx, j*dy, z);
+                var v = new THREE.Vector3(
+                    plot.min_i + i*dx,
+                    plot.min_j + j*dy,
+                    plot.data[j][i]
+                );
                 geometry.vertices.push(v);
             }
         };
@@ -119,10 +129,10 @@ ThreePlot = {
         };
 
         return geometry;
-    }
+    },
 
     "parseIPlot": function (plot, scene) {
-        "parse plottable object into an iterator that updates ThreeJS geometries";
+        // parse plottable object into an iterator that updates ThreeJS geometries
 
         var iplot = {"plot": plot};
         
@@ -183,28 +193,31 @@ ThreePlot = {
             case "surfaceplot":
 
             // forward declare for clarity
-            var material = new THREE.MeshBasicMaterial();//{
-            //     color: plot.color,
-            //     linewidth: 2
-            // });
+            var material = new THREE.MeshLambertMaterial({
+                color: plot.color,
+                shading: THREE.SmoothShading,
+                side: THREE.DoubleSide
+            });
             var geometry = {};
             var mesh = {};
 
             if (plot.animated) {
                 // TODO
-                alert("Surface animation not yet supported.")
+                alert("Surface animation not yet supported.");
                 throw "Plot Type Error: surface animation not yet supported";
             } else {
 
                 if (plot.function) { // type-check
                     // TODO convert to the other plot type and triangulate()
                     // var f = math.parse(plot["function"]).compile(math);
-                    throw "Syntax Error: this feature is not yet supported."
+                    throw "Syntax Error: this feature is not yet supported.";
                     throw "up";
                 } else {
                     // var up = plot.up.indexOf(Math.max(plot.up));
-                    geometry = triangulate( plot );
-                    mesh = THREE.Mesh( geometry, material );
+                    geometry = ThreePlot.triangulate( plot );
+                    geometry.computeFaceNormals();
+                    geometry.computeVertexNormals();
+                    mesh = new THREE.Mesh( geometry, material );
                     iplot.threeObj = mesh;
                     // don't change geometry
                     iplot.update = function () {};
@@ -212,8 +225,7 @@ ThreePlot = {
 
             };
 
-            // rotate to specified normal
-            // TODO
+            // TODO rotate to specified normal
             scene.add(mesh);
 
             break;
@@ -353,13 +365,6 @@ ThreePlot = {
         };
 
         // ---------------------
-        // Light
-
-        var light = new THREE.PointLight( 0xffffff, 1.5, 60 );
-        light.position = ZERO;
-        scene.add( light );
-
-        // ---------------------
         // Animate
 
         // create plot context
@@ -369,11 +374,13 @@ ThreePlot = {
         plotCtx.camera = camera;
         plotCtx.controls = controls;
         plotCtx.iplots = iplots;
-        plotCtx.light = light;
+        plotCtx.lights = [];
         plotCtx.id = Math.random().toString(36).slice(2); // random alpha-numeric
 
-        // fix camera
+        // fix camera and lights
+        ThreePlot.updateMetrics(plotCtx);
         ThreePlot.retargetCamera(plotCtx);
+        ThreePlot.updateLights(plotCtx);
 
         // ---------------------
         // Events
@@ -383,7 +390,9 @@ ThreePlot = {
             'dblclick',
             (function (plotCtx) {
                 return function (e) {
+                    ThreePlot.updateMetrics(plotCtx);
                     ThreePlot.retargetCamera(plotCtx);
+                    ThreePlot.updateLights(plotCtx);
                 }
             })(plotCtx),
             false

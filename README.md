@@ -73,6 +73,8 @@ Notes
 
 * You can add your own arbitrary objects to a scene by creating the ThreeJS objects and adding them to the scene via `ThreePlot.activePlots[i].scene`. To animate your objects through the ThreePlot render loop, create an object that has an `update()` method (called every frame) to update your objects, and push it to `ThreePlot.activePlots[i].iplots`.
 
+* For charts and graphs, try this: http://threegraphs.com/
+
 TODO
 -----
 
