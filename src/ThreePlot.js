@@ -68,24 +68,28 @@ ThreePlot = {
     "updateLights": function (plotCtx) {
         // add new lights to scene
         // this creates a fairly homogenous light effect
-        // TODO ehhhhh this is a bit too quick and dirty?
+        // TODO just have light shine out of camera?
         var M = plotCtx.metrics;
-        var dLightX = new THREE.DirectionalLight( 0xffffff, 0.5 );
-        var dLightY = new THREE.DirectionalLight( 0xffffff, 0.5 );
-        var dLightZ = new THREE.DirectionalLight( 0xffffff, 0.5 );
-        dLightX.position.set(M.distX,0,0);
-        dLightY.position.set(0,M.distY,0);
-        dLightZ.position.set(0,0,M.distZ);
-        plotCtx.scene.add( dLightX );
-        plotCtx.scene.add( dLightY );
-        plotCtx.scene.add( dLightZ );
+        var ps = [
+            [M.distX,0,0],[-M.distX,0,0],
+            [0,M.distY,0],[0,-M.distY,0],
+            [0,0,M.distZ],[0,0,-M.distZ]
+        ];
+        var dls = [];
+        for (var i = 0; i < ps.length; i++) {
+            var p = ps[i];
+            var dLight = new THREE.DirectionalLight( 0xffffff, 0.4 );
+            dLight.position.set(p[0],p[1],p[2]);
+            plotCtx.scene.add( dLight );
+            dls.push(dLight);
+        };
         // remove old lights
         var old = plotCtx.lights;
         for (var i = 0; i < old.length; i++) {
             plotCtx.scene.remove( old[i] );
         };
         // add new lights to plotCtx
-        plotCtx.lights = [dLightX, dLightY, dLightZ];
+        plotCtx.lights = dls;
     },
 
     "triangulate": function (plot) {
@@ -225,7 +229,14 @@ ThreePlot = {
 
             };
 
-            // TODO rotate to specified normal
+            // rotate to specified normal
+            var up = new THREE.Vector3(0,0,1);
+            var n = new THREE.Vector3(plot.up[0], plot.up[1], plot.up[2]);
+            n.normalize();
+            var q = new THREE.Quaternion().setFromUnitVectors(up, n)
+            mesh.setRotationFromQuaternion(q);
+
+            // add to scene and quit
             scene.add(mesh);
 
             break;
