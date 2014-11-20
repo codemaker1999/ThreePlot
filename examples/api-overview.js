@@ -42,6 +42,26 @@ var anim = {
 plots.push(anim);
 
 /*\
+|*|    Surface plot example
+\*/
+
+var pyramid = {
+    "type": "surfaceplot",
+    // min and max values for independent variables
+    "min_i": -1,
+    "max_i": 1,
+    "min_j": -1,
+    "max_j": 1,
+    // define dependent variable axis
+    "up": [0,0,1],
+    "data": [[0,0,0],
+             [0,3,0],
+             [0,0,0]]
+};
+
+plots.push(pyramid);
+
+/*\
 |*|    Global Settings
 \*/
 
@@ -62,5 +82,5 @@ settings.orbitTarget = [0,0,0];
 |*|    Run
 \*/
 
-ThreePlot.plot([ plots[0] ], document.getElementById("plotTarget_1"), settings);
+ThreePlot.plot([ plots[0] ], document.getElementById("plotTarget_1"));
 ThreePlot.plot([ plots[1] ], document.getElementById("plotTarget_2"), settings);
