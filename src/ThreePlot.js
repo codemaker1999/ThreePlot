@@ -2,7 +2,7 @@ ThreePlot = {
 
     "activePlots": [],
 
-    "getMetrics": function (plotCtx) {
+    "updateMetrics": function (plotCtx) {
         var res = {
             "maxX": 0, "maxY": 0, "maxZ": 0,
             "minX": 0, "minY": 0, "minZ": 0,
@@ -24,22 +24,11 @@ ThreePlot = {
                 res.minZ = pz < res.minZ ? pz : res.minZ;
             };
         }
-        
-        // type specific
+
+        // iterate        
         for (var i = 0; i < plotCtx.iplots.length; i++) {
-            var ip = plotCtx.iplots[i],
-                p  = ip.plot;
-            if (p.type === "lineplot") {
-                if (p.animated) {
-                    if (ip.threeObj) {
-                        setMaxMin( ip.threeObj.geometry.vertices );
-                    }
-                } else {
-                    setMaxMin( p.data );
-                }
-            } else if (p.type === "surfaceplot") {
-                // TODO
-            }
+            var ip = plotCtx.iplots[i];
+            setMaxMin( ip.threeObj.geometry.vertices );
         };
 
         // compute extra metrics
@@ -56,11 +45,12 @@ ThreePlot = {
         );
         res.center  = new THREE.Vector3(res.midX, res.midY, res.midZ);
 
+        plotCtx.metrics = res;
         return res;
     },
 
     "retargetCamera": function (plotCtx) {
-        var M = ThreePlot.getMetrics(plotCtx),
+        var M = plotCtx.metrics,
             relativeCameraPosn = new THREE.Vector3(
                 M.distX,
                 M.distY,
@@ -73,16 +63,80 @@ ThreePlot = {
         plotCtx.camera.position.z = cameraPosn.z;
         plotCtx.camera.lookAt(M.center);
         plotCtx.controls.target.copy(M.center); // for orbit
-        // Light
-        var light = new THREE.PointLight( 0xffffff, 1.5, 3 * M.maxDist );
-        light.position = M.center;
-        plotCtx.scene.remove(plotCtx.light);
-        plotCtx.light = light;
-        plotCtx.scene.add( light );
+    },
+
+    "updateLights": function (plotCtx) {
+        // add new lights to scene
+        // this creates a fairly homogenous light effect
+        // TODO just have light shine out of camera?
+        var M = plotCtx.metrics;
+        var ps = [
+            [M.distX,0,0],[-M.distX,0,0],
+            [0,M.distY,0],[0,-M.distY,0],
+            [0,0,M.distZ],[0,0,-M.distZ]
+        ];
+        var dls = [];
+        for (var i = 0; i < ps.length; i++) {
+            var p = ps[i];
+            var dLight = new THREE.DirectionalLight( 0xffffff, 0.4 );
+            dLight.position.set(p[0],p[1],p[2]);
+            plotCtx.scene.add( dLight );
+            dls.push(dLight);
+        };
+        // remove old lights
+        var old = plotCtx.lights;
+        for (var i = 0; i < old.length; i++) {
+            plotCtx.scene.remove( old[i] );
+        };
+        // add new lights to plotCtx
+        plotCtx.lights = dls;
+    },
+
+    "triangulate": function (plot) {
+        var geometry = new THREE.Geometry();
+        // add vertices
+        var wid = plot.data[0].length;
+        var hgt = plot.data.length;
+        var dy = (plot.max_j - plot.min_j)/hgt;
+        var dx = (plot.max_i - plot.min_i)/wid;
+        for (var j = 0; j < hgt; j++) {
+            for (var i = 0; i < wid; i++) {
+                var v = new THREE.Vector3(
+                    plot.min_i + i*dx,
+                    plot.min_j + j*dy,
+                    plot.data[j][i]
+                );
+                geometry.vertices.push(v);
+            }
+        };
+        // create triangles
+        var triangles = [];
+        for (var j = 0; j < hgt - 1; j++) {
+            for (var i = 0; i < wid - 1; i++) {
+                // up-left, up-right, etc. points
+                var ul = plot.data[j][i],
+                    ur = plot.data[j][i+1],
+                    dl = plot.data[j+1][i],
+                    dr = plot.data[j+1][i+1],
+                    ind_ul =     j*wid + i,
+                    ind_ur =     j*wid + (i+1),
+                    ind_dl = (j+1)*wid + i,
+                    ind_dr = (j+1)*wid + (i+1);
+                // create 2 faces from 4 points
+                geometry.faces.push(new THREE.Face3(
+                    ind_ul, ind_ur, ind_dl
+                ));
+                geometry.faces.push(new THREE.Face3(
+                    ind_ur, ind_dr, ind_dl
+                ));
+            };
+        };
+
+        return geometry;
     },
 
     "parseIPlot": function (plot, scene) {
-        "parse plottable object into an iterator that updates ThreeJS geometries";
+        // parse plottable object into an iterator that updates ThreeJS geometries
 
         var iplot = {"plot": plot};
         
@@ -94,17 +148,18 @@ ThreePlot = {
                 color: plot.color,
                 linewidth: 2
             });
-
-            var geometry = new THREE.Geometry();
+            var geometry = {};
+            var traj = {};
             
             if (plot.animated) {
 
+                geometry = new THREE.Geometry();
                 geometry.dynamic = true;
                 var xyz = new THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
                 for (var j=0; j<plot.lineLength; j++) {
                    geometry.vertices.push(xyz);
                 }
-                var traj = new THREE.Line(geometry, material);
+                traj = new THREE.Line(geometry, material);
                 // prevent culling (could be inefficient for lots of lines)
                 traj.frustumCulled = false;
 
@@ -122,11 +177,12 @@ ThreePlot = {
 
             } else {
 
+                geometry = new THREE.Geometry();
                 for (var j=0; j<plot.data.length; j++) {
                     var xyz = new THREE.Vector3( plot.data[j][0], plot.data[j][1], plot.data[j][2]);
                     geometry.vertices.push(xyz);
                 }
-                var traj = new THREE.Line(geometry, material);
+                traj = new THREE.Line(geometry, material);
                 iplot.threeObj = traj;
                 // don't change geometry
                 iplot.update = function () {};
@@ -139,12 +195,50 @@ ThreePlot = {
             
             // -------------------------------------------------------
             case "surfaceplot":
-            throw "Unsupported Plot Type: Surface plotting coming soon";
+
+            // forward declare for clarity
+            var material = new THREE.MeshLambertMaterial({
+                color: plot.color,
+                shading: THREE.SmoothShading,
+                side: THREE.DoubleSide
+            });
+            var geometry = {};
+            var mesh = {};
+
             if (plot.animated) {
-                //
+                // TODO
+                alert("Surface animation not yet supported.");
+                throw "Plot Type Error: surface animation not yet supported";
             } else {
-                //function () {};
+
+                if (plot.function) { // type-check
+                    // TODO convert to the other plot type and triangulate()
+                    // var f = math.parse(plot["function"]).compile(math);
+                    throw "Syntax Error: this feature is not yet supported.";
+                    throw "up";
+                } else {
+                    // var up = plot.up.indexOf(Math.max(plot.up));
+                    geometry = ThreePlot.triangulate( plot );
+                    geometry.computeFaceNormals();
+                    geometry.computeVertexNormals();
+                    mesh = new THREE.Mesh( geometry, material );
+                    iplot.threeObj = mesh;
+                    // don't change geometry
+                    iplot.update = function () {};
+                }
+
             };
+
+            // rotate to specified normal
+            var up = new THREE.Vector3(0,0,1);
+            var n = new THREE.Vector3(plot.up[0], plot.up[1], plot.up[2]);
+            n.normalize();
+            var q = new THREE.Quaternion().setFromUnitVectors(up, n)
+            mesh.setRotationFromQuaternion(q);
+
+            // add to scene and quit
+            scene.add(mesh);
+
             break;
 
             // -------------------------------------------------------
@@ -179,11 +273,6 @@ ThreePlot = {
 
     "plot": function(plots, plotTarget) {
         "Set up all the ThreeJS machinery";
-
-        // SPECIFIC TO GH-BRANCHES BEGIN
-        if (!plotTarget) alert("Invalid plot target. Please change it " +
-            "to ThreePlot.plot([ ... ], document.getElementById('plot'))");
-        // END
 
         /*\
         |*| Unpack settings
@@ -287,13 +376,6 @@ ThreePlot = {
         };
 
         // ---------------------
-        // Light
-
-        var light = new THREE.PointLight( 0xffffff, 1.5, 60 );
-        light.position = ZERO;
-        scene.add( light );
-
-        // ---------------------
         // Animate
 
         // create plot context
@@ -303,11 +385,13 @@ ThreePlot = {
         plotCtx.camera = camera;
         plotCtx.controls = controls;
         plotCtx.iplots = iplots;
-        plotCtx.light = light;
+        plotCtx.lights = [];
         plotCtx.id = Math.random().toString(36).slice(2); // random alpha-numeric
 
-        // fix camera
+        // fix camera and lights
+        ThreePlot.updateMetrics(plotCtx);
         ThreePlot.retargetCamera(plotCtx);
+        ThreePlot.updateLights(plotCtx);
 
         // ---------------------
         // Events
@@ -317,7 +401,9 @@ ThreePlot = {
             'dblclick',
             (function (plotCtx) {
                 return function (e) {
+                    ThreePlot.updateMetrics(plotCtx);
                     ThreePlot.retargetCamera(plotCtx);
+                    ThreePlot.updateLights(plotCtx);
                 }
             })(plotCtx),
             false
