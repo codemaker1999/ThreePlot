@@ -1,25 +1,37 @@
 <html>
 <head>
-    <title>ThreePlot Test</title>
+    <title>ThreePlot Live Demo</title>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <style>
     body {
-        background-color: #fff;
-        margin: 0px;
-        overflow: hidden;
+        background-color: #222;
     }
-    #plots {
-        width: 100vh;
+    #plot {
+        width: 80vw;
         height: 100vh;
+        position: absolute;
+        top: 0;
+        right: 0;
     }
-    .container {
-        display: inline-block;
+    #plotlist { 
+        width: 20vw;
+        height: 100vh;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+    .listElem {
+        padding: 20px;
+        font-size: larger;
+        color: #90B1ED;
     }
     </style>
 </head>
 <body>
-    <div id="plots"></div>
-    <script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+    <!--
+    -->
+    <div id="plotlist"></div>
+    <div id="plot"></div>
     <script src="/vendor/threejs/three.min.js"></script>
     <script src="/vendor/threejs/controls/FlyControls.js"></script>
     <script src="/vendor/threejs/controls/OrbitControls.js"></script>
