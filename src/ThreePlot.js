@@ -97,13 +97,13 @@ ThreePlot = {
         // add vertices
         var wid = plot.data[0].length;
         var hgt = plot.data.length;
-        var dy = (plot.max_j - plot.min_j)/hgt;
-        var dx = (plot.max_i - plot.min_i)/wid;
+        var dy = (plot.maxY - plot.minY)/hgt;
+        var dx = (plot.maxX - plot.minX)/wid;
         for (var j = 0; j < hgt; j++) {
             for (var i = 0; i < wid; i++) {
                 var v = new THREE.Vector3(
-                    plot.min_i + i*dx,
-                    plot.min_j + j*dy,
+                    plot.minX + i*dx,
+                    plot.minY + j*dy,
                     plot.data[j][i]
                 );
                 geometry.vertices.push(v);
@@ -141,8 +141,32 @@ ThreePlot = {
         var iplot = {"plot": plot};
         
         switch (plot.type) {
-            // -------------------------------------------------------
+            // -------------------------------------------------------------------------
+            // -------------------------------------------------------------------------
             case "lineplot":
+
+            if (plot.parse) {
+                // convert into the other form and continue
+                var fns = [];
+                for (var i = 0; i < plot.parse.length; i++) {
+                    var parsed   = math.parse(plot.parse[i]),
+                        symNodes = parsed.args.filter(function (x) { x.type == "SymbolNode" });
+                    if (symNodes.length === 0) {
+                        fns.push(function (t) {});
+                    } else if (symNodes.length === 1) {
+                        var varname = symNodes[0].name;
+                        fn = (function (v) {  })(varname);
+                    } else {
+                        throw "Invalid Lineplot 'parse' Parameter: use 0 or 1 symbols";
+                    }
+                };
+                // handle animation
+                if (plot.animated) {
+                    
+                } else {
+                    plot.data = 
+                };
+            }
 
             var material = new THREE.LineBasicMaterial({
                 color: plot.color,
@@ -193,8 +217,13 @@ ThreePlot = {
 
             break;
             
-            // -------------------------------------------------------
+            // -------------------------------------------------------------------------
+            // -------------------------------------------------------------------------
             case "surfaceplot":
+
+            if (plot.parse) {
+                // convert into the other form and continue
+            }
 
             // forward declare for clarity
             var material = new THREE.MeshLambertMaterial({
@@ -217,7 +246,6 @@ ThreePlot = {
                     throw "Syntax Error: this feature is not yet supported.";
                     throw "up";
                 } else {
-                    // var up = plot.up.indexOf(Math.max(plot.up));
                     geometry = ThreePlot.triangulate( plot );
                     geometry.computeFaceNormals();
                     geometry.computeVertexNormals();
@@ -230,11 +258,17 @@ ThreePlot = {
             };
 
             // rotate to specified normal
-            var up = new THREE.Vector3(0,0,1);
-            var n = new THREE.Vector3(plot.up[0], plot.up[1], plot.up[2]);
-            n.normalize();
-            var q = new THREE.Quaternion().setFromUnitVectors(up, n)
-            mesh.setRotationFromQuaternion(q);
+            if (plot.rotation) {
+                var up = new THREE.Vector3(0,0,1);
+                var rotn = new THREE.Vector3(
+                    plot.rotation[0],
+                    plot.rotation[1],
+                    plot.rotation[2]
+                );
+                rotn.normalize();
+                var q = new THREE.Quaternion().setFromUnitVectors(up, rotn)
+                mesh.setRotationFromQuaternion(q);
+            };
 
             // add to scene and quit
             scene.add(mesh);

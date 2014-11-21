@@ -45,18 +45,24 @@ plots.push(anim);
 |*|    Surface plot example
 \*/
 
+// surfaceplots must be in the form z=f(x,y) .
+// specify a "rotation" vector to rotate the resulting surface.
+// for more rotation control, access the Three JS object. EX:
+// ThreePlot.activePlots[i].threeObj.rotation.x += 1.23;
+
 var pyramid = {
     "type": "surfaceplot",
-    // min and max values for independent variables
-    "min_i": -1,
-    "max_i": 1,
-    "min_j": -1,
-    "max_j": 1,
-    // define dependent variable axis
-    "up": [0,0,1],
-    "data": [[0,0,0],
-             [0,3,0],
-             [0,0,0]]
+    // min and max values for X and Y, which provide
+    // a range of values to sample X and Y from
+    "minX": -1,
+    "maxX": 1,
+    "minY": -1,
+    "maxY": 1,
+    "data": [[0,0,0],  // z values go here (x and y values
+             [0,3,0],  // are implicit, obtained with
+             [0,0,0]], // minX, maxX, minY, and maxY).
+    // optional rotation vector
+    "rotation": [1,0,1]
 };
 
 plots.push(pyramid);

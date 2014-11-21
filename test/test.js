@@ -75,14 +75,14 @@ var plots = [
     {
         "label": "sine blanket",
         "type": "surfaceplot",
-        // min and max values for independent variables
-        "min_i": -10,
-        "max_i": 10,
-        "min_j": -10,
-        "max_j": 10,
-        // define dependent variable axis
-        "up": [0,1,1],
-        "data": sineBlanket(-10,-10,10,10,0.5)
+        // min and max values for X and Y
+        "minX": -10,
+        "maxX": 10,
+        "minY": -10,
+        "maxY": 10,
+        "data": sineBlanket(-10,-10,10,10,0.5),
+        // rotate after plotting
+        "rotation": [0,1,1]
     }
     // ----------------------------------------------------------
 ];
