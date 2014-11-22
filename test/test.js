@@ -102,6 +102,19 @@ var plots = [
         "lineLength": 1000,
         "start": 0,
         "step": 1/50
+    },
+    // ----------------------------------------------------------
+    {
+        "label": "parsed surfaceplot",
+        "type": "surfaceplot",
+        // provide f(x,y), where z=f(x,y)
+        "parse": "sin(x)+cos(y)",
+        "rotation": [0,0,1],
+        "minX": -10,
+        "maxX": 10,
+        "minY": -10,
+        "maxY": 10,
+        "step": 1/10
     }
     // ----------------------------------------------------------
 ];

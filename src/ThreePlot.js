@@ -194,7 +194,7 @@ ThreePlot = {
                     }
                 };
                 // now we have a fns array
-                plot.fns = fns;
+                plot.fns = fns; // TODO no need to store this on plot
                 // handle animation
                 if (plot.animated) {
                     // get initial condition
@@ -216,7 +216,6 @@ ThreePlot = {
                         end   = plot.end,
                         dt    = plot.step,
                         data  = [];
-                    DB = fns;
                     for (var t = start; t < end; t+=dt) {
                         data.push([fns[0](t), fns[1](t), fns[2](t)]);
                     };
@@ -279,6 +278,47 @@ ThreePlot = {
 
             if (plot.parse) {
                 // convert into the other form and continue
+                var fn;
+                var tree     = math.parse(plot.parse),
+                    symNames = ThreePlot.uniqueSymbolNames( tree ),
+                    compiled = tree.compile(math);
+                if (symNames.length < 3) {
+                    fn = (function (cpd, vname) {
+                            return function (vars) {
+                                var s = {};
+                                for (var i = 0; i < symNames.length; i++) {
+                                    // NOTE: input symbols are used in order they
+                                    // appear in the input funciton string
+                                    s[symNames[i]] = vars[i];
+                                };
+                                return cpd.eval(s);
+                            }
+                        })(compiled, symNames);
+                } else {
+                    throw "Invalid Surfaceplot 'parse' Parameter: use 0, 1, or 2 symbols";
+                }
+                // now we have a fns array
+                // handle animation
+                if (plot.animated) {
+                    // TODO future feature
+                    throw "Error: Surface animation not yet supported.";
+                } else {
+                    // sample from the fn
+                    var minX = plot.minX,
+                        maxX = plot.maxX,
+                        minY = plot.minY,
+                        maxY = plot.maxY,
+                        step = plot.step,
+                        data = [];
+                    for (var i = minX; i < maxX; i+=step) {
+                        var row = [];
+                        for (var j = minY; j < maxY; j+=step) {
+                            row.push( fn([i,j]) );
+                        };
+                        data.push( row );
+                    };
+                    plot.data = data;
+                };
             }
 
             // forward declare for clarity
@@ -295,21 +335,13 @@ ThreePlot = {
                 alert("Surface animation not yet supported.");
                 throw "Plot Type Error: surface animation not yet supported";
             } else {
-
-                if (plot.function) { // type-check
-                    // TODO convert to the other plot type and triangulate()
-                    // var f = math.parse(plot["function"]).compile(math);
-                    throw "Syntax Error: this feature is not yet supported.";
-                    throw "up";
-                } else {
-                    geometry = ThreePlot.triangulate( plot );
-                    geometry.computeFaceNormals();
-                    geometry.computeVertexNormals();
-                    mesh = new THREE.Mesh( geometry, material );
-                    iplot.threeObj = mesh;
-                    // don't change geometry
-                    iplot.update = function () {};
-                }
+                geometry = ThreePlot.triangulate( plot );
+                geometry.computeFaceNormals();
+                geometry.computeVertexNormals();
+                mesh = new THREE.Mesh( geometry, material );
+                iplot.threeObj = mesh;
+                // don't change geometry
+                iplot.update = function () {};
 
             };
 
