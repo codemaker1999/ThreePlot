@@ -1,10 +1,23 @@
+/*
+
+This overview contains valid, runnable code.
+It contains examples of most available
+features and options.
+
+For reference to what expressiong can be parsed,
+see the following:
+http://mathjs.org/docs/expressions/syntax.html
+
+*/
+
 var plots = [];
 
-/*\
-|*|    Static trajectory example
-\*/
+/******************************************************
+ *  Static Trajectories
+ */
 
-var staticPlot = {
+// manual data entry
+var staticTraj = {
     // optional keys
     "label": "Square",
     "color": "#ee1155",
@@ -12,14 +25,25 @@ var staticPlot = {
     "type": "lineplot",
     // type-specific keys (not animated)
     "data": [ [0,0,0], [1,0,0], [1,0,1], [0,0,1], [0,0,0] ]
-}
-plots.push(staticPlot);
+};
+plots.push(staticTraj);
 
-/*\
-|*|    Animated trajectory example
-\*/
+// parsed parametric funcitons
+var parsedParametricStatic = {
+    "type": "lineplot",
+    "parse": ["t % 10","t^2 % 5","3*sin(t)"],
+    "start": 0,
+    "end": 100,
+    "step": 1/50
+};
+plots.push(parsedParametricStatic);
 
-var anim = {
+/******************************************************
+ *  Animated Trajectories
+ */
+
+// manual data construction
+var animTraj = {
     // optional keys
     "label": "Animated Trajectory",
     "color": "#55ee11",
@@ -38,17 +62,27 @@ var anim = {
     // helper keys
     "t": 0,
     "dt": 1/100
-}
-plots.push(anim);
+};
+plots.push(animTraj);
 
-/*\
-|*|    Surface plot example
-\*/
+// parsed parametric functions 
+var parsedParametricAnim = {
+    "type": "lineplot",
+    "animated": true,
+    "parse": ["-t % 10","-t^2 % 5","3*sin(t)"],
+    "lineLength": 1000,
+    "start": 0,
+    "step": 1/50
+};
+plots.push(parsedParametricAnim);
+
+/******************************************************
+ *  Static Surface Plots
+ */
 
 // surfaceplots must be in the form z=f(x,y) .
-// specify a "rotation" vector to rotate the resulting surface.
-// for more rotation control, access the Three JS object. EX:
-// ThreePlot.activePlots[i].threeObj.rotation.x += 1.23;
+// specify a "rotation" vector to rotate the resulting
+// surface to the specified direction.
 
 var pyramid = {
     "type": "surfaceplot",
@@ -64,12 +98,25 @@ var pyramid = {
     // optional rotation vector
     "rotation": [1,0,1]
 };
-
 plots.push(pyramid);
 
-/*\
-|*|    Global Settings
-\*/
+var parsedSurface = {
+    "type": "surfaceplot",
+    // provide f(x,y), where z=f(x,y)
+    "parse": "sin(x)+cos(y)",
+    "minX": -10,
+    "maxX": 10,
+    "minY": -10,
+    "maxY": 10,
+    "step": 1/10,
+    // optional rotation vector
+    "rotation": [0,2,1]
+};
+plots.push(parsedSurface);
+
+/******************************************************
+ *  Global Settings
+ */
 
 // ThreePlot chooses sensible defaults for all settings
 // These are all available options
@@ -84,9 +131,9 @@ settings.cameraAngle = 45; // field of view
 settings.cameraPos = [10,10,10];
 settings.orbitTarget = [0,0,0];
 
-/*\
-|*|    Run
-\*/
+/******************************************************
+ *  Run
+ */
 
-ThreePlot.plot([ plots[0] ], document.getElementById("plotTarget_1"));
+ThreePlot.plot([ plots[0], plots[2] ], document.getElementById("plotTarget_1"));
 ThreePlot.plot([ plots[1] ], document.getElementById("plotTarget_2"), settings);
