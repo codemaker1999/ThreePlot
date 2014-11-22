@@ -60,9 +60,9 @@ var animHelix = {
     "animated": true,
     "lineLength": 10000, // animations must be fixed length
     "xyz": [-2,-1,0], // initial condition
-    // The step function must return the next point each frame.
+    // The "next" function must return the next point each frame.
     // Here, it creates a spiral
-    "step": function () {
+    "next": function () {
         var t = this.t;
         var p = [Math.sin(t) - 2, Math.cos(t) - 2, t/10];
         this.t += 1/50;
@@ -78,9 +78,9 @@ var wireCube = {
     "animated": true,
     "lineLength": 300, // animations must be fixed length
     "xyz": [2,2,0], // initial point
-    // The step function must return the next point each frame.
+    // The "next" function must return the next point each frame.
     // Here, it just returns a random point in the unit cube
-    "step": function () {
+    "next": function () {
         var x = 2 + Math.random(),
             y = 2 + Math.random(),
             z = Math.random();

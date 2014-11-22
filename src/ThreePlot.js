@@ -65,46 +65,19 @@ ThreePlot = {
         plotCtx.controls.target.copy(M.center); // for orbit
     },
 
-    "updateLights": function (plotCtx) {
-        // add new lights to scene
-        // this creates a fairly homogenous light effect
-        // TODO just have light shine out of camera?
-        var M = plotCtx.metrics;
-        var ps = [
-            [M.distX,0,0],[-M.distX,0,0],
-            [0,M.distY,0],[0,-M.distY,0],
-            [0,0,M.distZ],[0,0,-M.distZ]
-        ];
-        var dls = [];
-        for (var i = 0; i < ps.length; i++) {
-            var p = ps[i];
-            var dLight = new THREE.DirectionalLight( 0xffffff, 0.4 );
-            dLight.position.set(p[0],p[1],p[2]);
-            plotCtx.scene.add( dLight );
-            dls.push(dLight);
-        };
-        // remove old lights
-        var old = plotCtx.lights;
-        for (var i = 0; i < old.length; i++) {
-            plotCtx.scene.remove( old[i] );
-        };
-        // add new lights to plotCtx
-        plotCtx.lights = dls;
-    },
-
-    "triangulate": function (plot) {
+    "triangulate": function (minX,minY,maxX,maxY,data) {
         var geometry = new THREE.Geometry();
         // add vertices
-        var wid = plot.data[0].length;
-        var hgt = plot.data.length;
-        var dy = (plot.maxY - plot.minY)/hgt;
-        var dx = (plot.maxX - plot.minX)/wid;
+        var wid = data[0].length;
+        var hgt = data.length;
+        var dy = (maxY - minY)/hgt;
+        var dx = (maxX - minX)/wid;
         for (var j = 0; j < hgt; j++) {
             for (var i = 0; i < wid; i++) {
                 var v = new THREE.Vector3(
-                    plot.minX + i*dx,
-                    plot.minY + j*dy,
-                    plot.data[j][i]
+                    minX + i*dx,
+                    minY + j*dy,
+                    data[j][i]
                 );
                 geometry.vertices.push(v);
             }
@@ -114,10 +87,10 @@ ThreePlot = {
         for (var j = 0; j < hgt - 1; j++) {
             for (var i = 0; i < wid - 1; i++) {
                 // up-left, up-right, etc. points
-                var ul = plot.data[j][i],
-                    ur = plot.data[j][i+1],
-                    dl = plot.data[j+1][i],
-                    dr = plot.data[j+1][i+1],
+                var ul = data[j][i],
+                    ur = data[j][i+1],
+                    dl = data[j+1][i],
+                    dr = data[j+1][i+1],
                     ind_ul =     j*wid + i,
                     ind_ur =     j*wid + (i+1),
                     ind_dl = (j+1)*wid + i,
@@ -194,22 +167,21 @@ ThreePlot = {
                     }
                 };
                 // now we have a fns array
-                plot.fns = fns; // TODO no need to store this on plot
                 // handle animation
                 if (plot.animated) {
-                    // get initial condition
-                    var t0 = plot.start;
-                    plot.xyz = [fns[0](t0), fns[1](t0), fns[2](t0)];
-                    // create step function
-                    plot.t = t0;
+                    // create 'next' function
+                    plot.t = plot.start;
                     plot.dt = plot.step;
-                    plot.step = function () {
-                        var fns = this.fns,
-                            t   = this.t,
-                            xyz = [fns[0](t), fns[1](t), fns[2](t)];
-                        this.t += this.dt;
-                        return xyz;
-                    };
+                    plot.next = (function (fns) {
+                        return function () {
+                            var t   = this.t,
+                                xyz = [fns[0](t), fns[1](t), fns[2](t)];
+                            this.t += this.dt;
+                            return xyz;
+                        };
+                    })(fns);
+                    // set initial condition
+                    plot.xyz = plot.next();
                 } else {
                     // sample from the fns
                     var start = plot.start,
@@ -221,7 +193,7 @@ ThreePlot = {
                     };
                     plot.data = data;
                 };
-            } // end parse
+            } // end parsing
 
             var material = new THREE.LineBasicMaterial({
                 color: plot.color,
@@ -245,7 +217,7 @@ ThreePlot = {
                 // iplot
                 iplot.threeObj = traj;
                 iplot.update = function () {
-                    var xyz = this.plot.step();
+                    var xyz = this.plot.next();
                     var new_xyz = new THREE.Vector3(xyz[0], xyz[1], xyz[2]);
                     this.plot.xyz = new_xyz;
                     // update trajectory
@@ -281,27 +253,62 @@ ThreePlot = {
                 var fn;
                 var tree     = math.parse(plot.parse),
                     symNames = ThreePlot.uniqueSymbolNames( tree ),
-                    compiled = tree.compile(math);
-                if (symNames.length < 3) {
-                    fn = (function (cpd, vname) {
-                            return function (vars) {
-                                var s = {};
-                                for (var i = 0; i < symNames.length; i++) {
+                    compiled = tree.compile(math),
+                    reqNumVars = 3;
+                // special case for animations
+                if (symNames.indexOf("t") != -1) reqNumVars++;
+
+                if (symNames.length < reqNumVars) {
+                    fn = (function (cpd, vnames) {
+                            return function (vars, t) {
+                                var s = {}, j = 0;
+                                for (var i = 0; i < vnames.length; i++) {
                                     // NOTE: input symbols are used in order they
-                                    // appear in the input funciton string
-                                    s[symNames[i]] = vars[i];
+                                    // appear in the input funciton string (except t)
+                                    if (typeof t != "undefined" && vnames[i] === "t") {
+                                        s["t"] = t;
+                                        j++;
+                                    } else {
+                                        s[vnames[i]] = vars[i-j];
+                                    };
                                 };
                                 return cpd.eval(s);
                             }
                         })(compiled, symNames);
                 } else {
-                    throw "Invalid Surfaceplot 'parse' Parameter: use 0, 1, or 2 symbols";
+                    throw "Invalid Surfaceplot 'parse' Parameter: use 0, 1, or 2 symbols, " +
+                        "plus 't' if you are animating a surface.";
                 }
                 // now we have a fns array
                 // handle animation
                 if (plot.animated) {
-                    // TODO future feature
-                    throw "Error: Surface animation not yet supported.";
+                    // create 'next' function
+                    plot.t  = plot.start;
+                    plot.dt = plot.step;
+                    plot.next = (function (fn) {
+                        return function () {
+                            // sample from the fn
+                            var minX = this.minX,
+                                maxX = this.maxX,
+                                minY = this.minY,
+                                maxY = this.maxY,
+                                t    = this.t,
+                                dt   = this.dt,
+                                mesh = [];
+                            // construct initial condition
+                            for (var i = minX; i < maxX; i+=dt) {
+                                var row = [];
+                                for (var j = minY; j < maxY; j+=dt) {
+                                    row.push( fn([i,j], t) );
+                                };
+                                mesh.push( row );
+                            };
+                            this.t += dt;
+                            return mesh;
+                        };
+                    })(fn);
+                    // set initial condition
+                    plot.mesh = plot.next();
                 } else {
                     // sample from the fn
                     var minX = plot.minX,
@@ -319,9 +326,9 @@ ThreePlot = {
                     };
                     plot.data = data;
                 };
-            }
+            } // end parsing
 
-            // forward declare for clarity
+            // forward declare
             var material = new THREE.MeshLambertMaterial({
                 color: plot.color,
                 shading: THREE.SmoothShading,
@@ -331,11 +338,33 @@ ThreePlot = {
             var mesh = {};
 
             if (plot.animated) {
-                // TODO
-                alert("Surface animation not yet supported.");
-                throw "Plot Type Error: surface animation not yet supported";
+                geometry = ThreePlot.triangulate(
+                    plot.minX, plot.minY, plot.maxX, plot.maxY, plot.mesh
+                );
+                geometry.computeFaceNormals();
+                geometry.computeVertexNormals();
+                mesh = new THREE.Mesh( geometry, material );
+                iplot.threeObj = mesh;
+                iplot.update = function () {
+                    var plt = this.plot;
+                    plt.mesh = plt.next();
+                    // replace entire geometry object
+                    // TODO is there a better implementation?
+                    var geo = ThreePlot.triangulate(
+                        plt.minX, plt.minY, plt.maxX, plt.maxY, plt.mesh
+                    );
+                    geo.computeFaceNormals();
+                    geo.computeVertexNormals();
+                    geo.verticesNeedUpdate = true; // flag for update
+                    // threeJS holds references to geometries in object3Ds,
+                    // so we must call .dispose() to avoid memory leaks
+                    this.threeObj.geometry.dispose();
+                    this.threeObj.geometry = geo;
+                };
             } else {
-                geometry = ThreePlot.triangulate( plot );
+                geometry = ThreePlot.triangulate(
+                    plot.minX, plot.minY, plot.maxX, plot.maxY, plot.data
+                );
                 geometry.computeFaceNormals();
                 geometry.computeVertexNormals();
                 mesh = new THREE.Mesh( geometry, material );
@@ -384,8 +413,12 @@ ThreePlot = {
                 plotCtx.iplots[j].update();
             };
 
-            // update controls and render
+            // update controls and lights
             plotCtx.controls.update( 1 );
+            plotCtx.light.position.copy( plotCtx.camera.position );
+            plotCtx.light.lookAt( plotCtx.metrics.center );
+
+            // render
             plotCtx.renderer.render( plotCtx.scene, plotCtx.camera );
         };
 
@@ -498,6 +531,12 @@ ThreePlot = {
         };
 
         // ---------------------
+        // Light
+
+        var light = new THREE.DirectionalLight( 0xffffff, 0.9 );
+        scene.add(light);
+
+        // ---------------------
         // Animate
 
         // create plot context
@@ -507,13 +546,14 @@ ThreePlot = {
         plotCtx.camera = camera;
         plotCtx.controls = controls;
         plotCtx.iplots = iplots;
-        plotCtx.lights = [];
+        plotCtx.light = light;
         plotCtx.id = Math.random().toString(36).slice(2); // random alpha-numeric
 
-        // fix camera and lights
+        // fix camera and light
         ThreePlot.updateMetrics(plotCtx);
         ThreePlot.retargetCamera(plotCtx);
-        ThreePlot.updateLights(plotCtx);
+        light.position.copy( camera.position );
+        light.lookAt( plotCtx.metrics.center );
 
         // ---------------------
         // Events
@@ -525,7 +565,6 @@ ThreePlot = {
                 return function (e) {
                     ThreePlot.updateMetrics(plotCtx);
                     ThreePlot.retargetCamera(plotCtx);
-                    ThreePlot.updateLights(plotCtx);
                 }
             })(plotCtx),
             false
@@ -539,4 +578,5 @@ ThreePlot = {
     },
 }
 
+// start the render loop
 ThreePlot.animate();

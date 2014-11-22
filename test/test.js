@@ -1,28 +1,30 @@
-function addElem (name, n) {
+function addElem (name, n, s) {
     var par = document.getElementById("plotlist");
     var d = document.createElement("div");
     d.className = "listElem";
     d.onclick = (function(n) {
         return function (e) {
-            run(n);
+            run(n,s);
         };
-    })(n);
+    })(n,s);
     d.innerHTML = name;
     par.appendChild(d);
 }
 
-function run (n) {
+function run (n,s) {
+    // might be leaking memeory here
     ThreePlot.activePlots = [];
     document.getElementById('plot').innerHTML = '';
-    ThreePlot.plot([ plots[n] ], document.getElementById("plot"));
+    ThreePlot.plot([ plots[n] ], document.getElementById("plot"), s);
 }
 
-function sineBlanket(minx,miny,maxx,maxy,step) {
-    var sb = [];
+function sineBlanket(minx,miny,maxx,maxy,step,t) {
+    var t  = t || Math.PI/2,
+        sb = [];
     for (var i = minx; i < maxx; i+=step) {
         var row = [];
         for (var j = miny; j < maxy; j+=step) {
-            row.push( Math.sin(i) + Math.cos(j) );
+            row.push( (Math.sin(i) + Math.cos(j))*Math.sin(t) );
         };
         sb.push( row );
     };
@@ -45,7 +47,7 @@ var plots = [
         "animated": true,
         "lineLength": 10000, // buffered geometry is fixed size
         "xyz": [0,1,0], // initial condition
-        "step": function () {
+        "next": function () {
             var t = this.t;
             var p = [Math.sin(t), Math.cos(t), t/10];
             this.t += this.dt;
@@ -62,7 +64,7 @@ var plots = [
         "animated": true,
         "lineLength": 300, // buffered geometry is fixed size
         "xyz": [0,0,0], // initial condition
-        "step": function () {
+        "next": function () {
             var phi   = 2*Math.PI*Math.random(),
                 theta = Math.PI*Math.random(),
                 x     = Math.cos(phi)*Math.sin(theta),
@@ -86,6 +88,27 @@ var plots = [
     },
     // ----------------------------------------------------------
     {
+        "label": "animated sine blanket",
+        "type": "surfaceplot",
+        "animated": true,
+        "minX": -5,
+        "maxX": 5,
+        "minY": -5,
+        "maxY": 5,
+        "rotation": [0,1,1],
+        "mesh": sineBlanket(-5,-5,5,5,1/5,0), // initial condition
+        "next": function () {
+            var t = this.t;
+            var mesh = sineBlanket(-5,-5,5,5,1/5,t);
+            this.t += this.dt;
+            return mesh;
+        },
+        // helper keys
+        "t": 0,
+        "dt": 1/20
+    },
+    // ----------------------------------------------------------
+    {
         "label": "parsed lineplot",
         "type": "lineplot",
         "parse": ["t % 10","t^2 % 5","3*sin(t)"],
@@ -105,7 +128,7 @@ var plots = [
     },
     // ----------------------------------------------------------
     {
-        "label": "parsed surfaceplot",
+        "label": "parsed sine blanket",
         "type": "surfaceplot",
         // provide f(x,y), where z=f(x,y)
         "parse": "sin(x)+cos(y)",
@@ -114,12 +137,30 @@ var plots = [
         "maxX": 10,
         "minY": -10,
         "maxY": 10,
-        "step": 1/10
-    }
+        "step": 1/10,
+        // not part of API, just convenience
+        "settings": {"autoRotate": true}
+    },
+    // ----------------------------------------------------------
+    {
+        "label": "parsed animated sine blanket",
+        "type": "surfaceplot",
+        "animated": true,
+        // enforce that time is always "t"
+        "parse": "sin(t)*(sin(x)+sin(y))",
+        "minX" : -6,
+        "maxX" : 6,
+        "minY" : -6,
+        "maxY" : 6,
+        "step" : 1/4,
+        "start": 0,
+        "dt"   : 1/20
+    },
     // ----------------------------------------------------------
 ];
 
 for (var i = 0; i < plots.length; i++) {
-    var p = plots[i];
-    addElem(p.label, i);
+    var p = plots[i],
+        s = p.settings || {};
+    addElem(p.label, i, s);
 };
