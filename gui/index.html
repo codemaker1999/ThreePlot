@@ -4,7 +4,7 @@
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <style>
     body {
-        background-color: #222;
+        background-color: #ddd;
     }
     #plot {
         width: 70vw;
@@ -81,9 +81,9 @@
         var x     = document.getElementById("line-x"),
             y     = document.getElementById("line-y"),
             z     = document.getElementById("line-z"),
-            start = document.getElementById("line-start"),
-            end   = document.getElementById("line-end"),
-            step  = document.getElementById("line-step"),
+            start = parseFloat( document.getElementById("line-start") ),
+            end   = parseFloat( document.getElementById("line-end") ),
+            step  = parseFloat( document.getElementById("line-step") ),
             plt   = {
                 "type" : "lineplot",
                 "parse": [x,y,z],
@@ -99,9 +99,9 @@
         var x = document.getElementById("anim-line-x"),
             y = document.getElementById("anim-line-y"),
             z = document.getElementById("anim-line-z"),
-            linelen = ,
-            start = ,
-            step = ,
+            linelen = parseInt( document.getElementById("anim-line-linelen") ),
+            start = parseFloat( document.getElementById("anim-line-start") ),
+            step = parseFloat( document.getElementById("anim-line-step") ),
             plt = {
                 "type"      : "lineplot",
                 "animated"  : true,
@@ -116,11 +116,11 @@
     
     function surfaceplot () {
         var fn   = document.getElementById("surface-input"),
-            minX = document.getElementById("surface-minX"),
-            maxX = document.getElementById("surface-maxX"),
-            minY = document.getElementById("surface-minY"),
-            maxY = document.getElementById("surface-maxY"),
-            step = document.getElementById("surface-step"),
+            minX = parseFloat( document.getElementById("surface-minX") ),
+            maxX = parseFloat( document.getElementById("surface-maxX") ),
+            minY = parseFloat( document.getElementById("surface-minY") ),
+            maxY = parseFloat( document.getElementById("surface-maxY") ),
+            step = parseFloat( document.getElementById("surface-step") ),
             rotn = document.getElementById("surface-rotn") || [0,0,1],
             plt  = {
                 "type": "surfaceplot",
