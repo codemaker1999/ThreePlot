@@ -92,19 +92,19 @@ ThreePlot = {
         plotCtx.lights = dls;
     },
 
-    "triangulate": function (plot) {
+    "triangulate": function (minX,minY,maxX,maxY,data) {
         var geometry = new THREE.Geometry();
         // add vertices
-        var wid = plot.data[0].length;
-        var hgt = plot.data.length;
-        var dy = (plot.maxY - plot.minY)/hgt;
-        var dx = (plot.maxX - plot.minX)/wid;
+        var wid = data[0].length;
+        var hgt = data.length;
+        var dy = (maxY - minY)/hgt;
+        var dx = (maxX - minX)/wid;
         for (var j = 0; j < hgt; j++) {
             for (var i = 0; i < wid; i++) {
                 var v = new THREE.Vector3(
-                    plot.minX + i*dx,
-                    plot.minY + j*dy,
-                    plot.data[j][i]
+                    minX + i*dx,
+                    minY + j*dy,
+                    data[j][i]
                 );
                 geometry.vertices.push(v);
             }
@@ -114,10 +114,10 @@ ThreePlot = {
         for (var j = 0; j < hgt - 1; j++) {
             for (var i = 0; i < wid - 1; i++) {
                 // up-left, up-right, etc. points
-                var ul = plot.data[j][i],
-                    ur = plot.data[j][i+1],
-                    dl = plot.data[j+1][i],
-                    dr = plot.data[j+1][i+1],
+                var ul = data[j][i],
+                    ur = data[j][i+1],
+                    dl = data[j+1][i],
+                    dr = data[j+1][i+1],
                     ind_ul =     j*wid + i,
                     ind_ur =     j*wid + (i+1),
                     ind_dl = (j+1)*wid + i,
@@ -301,7 +301,7 @@ ThreePlot = {
                 // handle animation
                 if (plot.animated) {
                     // TODO future feature
-                    throw "Error: Surface animation not yet supported.";
+                    throw "Error: Surface animation parsing not yet supported.";
                 } else {
                     // sample from the fn
                     var minX = plot.minX,
@@ -331,11 +331,30 @@ ThreePlot = {
             var mesh = {};
 
             if (plot.animated) {
-                // TODO
-                alert("Surface animation not yet supported.");
-                throw "Plot Type Error: surface animation not yet supported";
+                geometry = ThreePlot.triangulate(
+                    plot.minX, plot.minY, plot.maxX, plot.maxY, plot.mesh
+                );
+                geometry.computeFaceNormals();
+                geometry.computeVertexNormals();
+                mesh = new THREE.Mesh( geometry, material );
+                iplot.threeObj = mesh;
+                iplot.update = function () {
+                    var plt = this.plot;
+                    plt.mesh = plt.step();
+                    // replace entire geometry object
+                    // TODO is there a better implementation?
+                    var geo = ThreePlot.triangulate(
+                        plt.minX, plt.minY, plt.maxX, plt.maxY, plt.mesh
+                    );
+                    geo.computeFaceNormals();
+                    geo.computeVertexNormals();
+                    geo.verticesNeedUpdate = true;
+                    this.threeObj.geometry = geo;
+                };
             } else {
-                geometry = ThreePlot.triangulate( plot );
+                geometry = ThreePlot.triangulate(
+                    plot.minX, plot.minY, plot.maxX, plot.maxY, plot.data
+                );
                 geometry.computeFaceNormals();
                 geometry.computeVertexNormals();
                 mesh = new THREE.Mesh( geometry, material );

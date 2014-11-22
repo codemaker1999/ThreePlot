@@ -17,12 +17,13 @@ function run (n) {
     ThreePlot.plot([ plots[n] ], document.getElementById("plot"));
 }
 
-function sineBlanket(minx,miny,maxx,maxy,step) {
-    var sb = [];
+function sineBlanket(minx,miny,maxx,maxy,step,t) {
+    var t  = t || Math.PI/2,
+        sb = [];
     for (var i = minx; i < maxx; i+=step) {
         var row = [];
         for (var j = miny; j < maxy; j+=step) {
-            row.push( Math.sin(i) + Math.cos(j) );
+            row.push( (Math.sin(i) + Math.cos(j))*Math.sin(t) );
         };
         sb.push( row );
     };
@@ -115,7 +116,28 @@ var plots = [
         "minY": -10,
         "maxY": 10,
         "step": 1/10
-    }
+    },
+    // ----------------------------------------------------------
+    {
+        "label": "animated sine blanket",
+        "type": "surfaceplot",
+        "animated": true,
+        "minX": -5,
+        "maxX": 5,
+        "minY": -5,
+        "maxY": 5,
+        "rotation": [0,1,1],
+        "mesh": sineBlanket(-5,-5,5,5,1/5,0), // initial condition
+        "step": function () {
+            var t = this.t;
+            var mesh = sineBlanket(-5,-5,5,5,1/5,t);
+            this.t += this.dt;
+            return mesh;
+        },
+        // helper keys
+        "t": 0,
+        "dt": 1/20
+    },
     // ----------------------------------------------------------
 ];
 

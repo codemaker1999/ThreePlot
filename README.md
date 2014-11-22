@@ -34,25 +34,38 @@ var square = {
 ThreePlot.plot([ triangle, square ], targetHtmlElement);
 ```
 
-and to create an animated trajectory:
+to create an animated spiral:
 
 ```js
-var meshCube = {
-    "type": "lineplot",
-    "animated": true,
-    "lineLength": 300, // see "Notes" below
-    "xyz": [0,0,0], // initial point
-    // The step function must return the next point each frame.
-    // Here, it just returns a random point in the unit cube
-    "step": function () {
-        var x = Math.random(),
-            y = Math.random(),
-            z = Math.random();
-        return [x,y,z];
-    },
+var animSpiral = {
+    "type"      : "lineplot",
+    "animated"  : true,
+    // provide parametric components:
+    // [ x(t), y(t), z(t) ]
+    "parse"     : [ "sin(t)", "cos(t)", "t/10" ],
+    "start"     : 0,
+    "step"      : 1/40,
+    "lineLength": 10000
 };
 
-ThreePlot.plot([ meshCube ], targetHtmlElement);
+ThreePlot.plot([ animSpiral ], targetHtmlElement);
+```
+
+and to create a surface plot, say a sinusoidal blanket:
+
+```js
+var blanket = {
+    "type"  : "surfaceplot",
+    // provide f(x,y), where z=f(x,y)
+    "parse" : "sin(x)+cos(y)",
+    "minX"  : -10,
+    "maxX"  : 10,
+    "minY"  : -10,
+    "maxY"  : 10,
+    "step"  : 1/10
+};
+
+ThreePlot.plot([ blanket ], targetHtmlElement);
 ```
 
 ThreePlot will figure the rest out. There are many customizable options, check out `/examples/api-overview.js` if you want a quick reference to them. Tip: double-click on the plot to retarget the camera (this is useful for animations).
@@ -67,11 +80,13 @@ Examples
 Notes
 ------
 
-* For efficiency reasons there is a finite length to the trajectories being animated (A finite size buffer is created to hold the points being plotted), so animations will eventually start to disappear sequentially from where they start (they will continue to grow at the same rate, of course).
+* For efficiency reasons there is a finite length to the trajectories being animated (A finite size buffer is created to hold the points being plotted), so animations will eventually start to disappear sequentially from where they start (they will continue to grow at the same rate, of course). This may be removed in the future to simplify the API.
 
 * The `ThreePlot.plot` function returns a random string ID that is attached to the corresponding plot object `ThreePlot.activePlots[i].id`
 
 * You can add your own arbitrary objects to a scene by creating the ThreeJS objects and adding them to the scene via `ThreePlot.activePlots[i].scene`. To animate your objects through the ThreePlot render loop, create an object that has an `update()` method (called every frame) to update your objects, and push it to `ThreePlot.activePlots[i].iplots`.
+
+* If you are plotting surfaces and the page is freezeing, try reducing the min and max bounds, and increasing the step size. You can easily and accidentally end up trying to compute millions or billions of points without realizing it!
 
 * For charts and graphs, try this: http://threegraphs.com/
 
