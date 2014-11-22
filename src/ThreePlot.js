@@ -97,13 +97,13 @@ ThreePlot = {
         // add vertices
         var wid = plot.data[0].length;
         var hgt = plot.data.length;
-        var dy = (plot.max_j - plot.min_j)/hgt;
-        var dx = (plot.max_i - plot.min_i)/wid;
+        var dy = (plot.maxY - plot.minY)/hgt;
+        var dx = (plot.maxX - plot.minX)/wid;
         for (var j = 0; j < hgt; j++) {
             for (var i = 0; i < wid; i++) {
                 var v = new THREE.Vector3(
-                    plot.min_i + i*dx,
-                    plot.min_j + j*dy,
+                    plot.minX + i*dx,
+                    plot.minY + j*dy,
                     plot.data[j][i]
                 );
                 geometry.vertices.push(v);
@@ -135,14 +135,93 @@ ThreePlot = {
         return geometry;
     },
 
+    "uniqueSymbolNames": function (tree) {
+        // return the unique symbolNodes of tree
+        // filter the SymbolNodes out
+        var arr = tree.filter(function (node) {
+            return node.type == 'SymbolNode';
+        });
+        // get unique list of names
+        var dummy = {}, names = [];
+        for(var i = 0, l = arr.length; i < l; ++i){
+            if(!dummy.hasOwnProperty(arr[i].name)) {
+                names.push(arr[i].name);
+                dummy[arr[i].name] = 1;
+            }
+        }
+        return names;
+    },
+
     "parseIPlot": function (plot, scene) {
         // parse plottable object into an iterator that updates ThreeJS geometries
 
         var iplot = {"plot": plot};
         
         switch (plot.type) {
-            // -------------------------------------------------------
+            // -------------------------------------------------------------------------
+            // -------------------------------------------------------------------------
             case "lineplot":
+
+            // TODO There is a chance for property collisions here
+            if (plot.parse) {
+                // convert into the other form and continue
+                var fns = [];
+                for (var i = 0; i < plot.parse.length; i++) {
+                    var tree     = math.parse(plot.parse[i]),
+                        symNames = ThreePlot.uniqueSymbolNames( tree ),
+                        compiled = tree.compile(math);
+                    if (symNames.length === 0) {
+                        fns.push((
+                            function (cpd) {
+                                return function (t) {
+                                    return cpd.eval();
+                                }
+                            }
+                        )(compiled));
+                    } else if (symNames.length === 1) {
+                        var varname = symNames[0];
+                        fns.push(
+                            (function (cpd, vname) {
+                                return function (t) {
+                                    var s = {};
+                                    s[vname] = t;
+                                    return cpd.eval(s);
+                                }
+                            })(compiled, varname)
+                        );
+                    } else {
+                        throw "Invalid Lineplot 'parse' Parameter: use 0 or 1 symbols";
+                    }
+                };
+                // now we have a fns array
+                plot.fns = fns; // TODO no need to store this on plot
+                // handle animation
+                if (plot.animated) {
+                    // get initial condition
+                    var t0 = plot.start;
+                    plot.xyz = [fns[0](t0), fns[1](t0), fns[2](t0)];
+                    // create step function
+                    plot.t = t0;
+                    plot.dt = plot.step;
+                    plot.step = function () {
+                        var fns = this.fns,
+                            t   = this.t,
+                            xyz = [fns[0](t), fns[1](t), fns[2](t)];
+                        this.t += this.dt;
+                        return xyz;
+                    };
+                } else {
+                    // sample from the fns
+                    var start = plot.start,
+                        end   = plot.end,
+                        dt    = plot.step,
+                        data  = [];
+                    for (var t = start; t < end; t+=dt) {
+                        data.push([fns[0](t), fns[1](t), fns[2](t)]);
+                    };
+                    plot.data = data;
+                };
+            } // end parse
 
             var material = new THREE.LineBasicMaterial({
                 color: plot.color,
@@ -193,8 +272,54 @@ ThreePlot = {
 
             break;
             
-            // -------------------------------------------------------
+            // -------------------------------------------------------------------------
+            // -------------------------------------------------------------------------
             case "surfaceplot":
+
+            if (plot.parse) {
+                // convert into the other form and continue
+                var fn;
+                var tree     = math.parse(plot.parse),
+                    symNames = ThreePlot.uniqueSymbolNames( tree ),
+                    compiled = tree.compile(math);
+                if (symNames.length < 3) {
+                    fn = (function (cpd, vname) {
+                            return function (vars) {
+                                var s = {};
+                                for (var i = 0; i < symNames.length; i++) {
+                                    // NOTE: input symbols are used in order they
+                                    // appear in the input funciton string
+                                    s[symNames[i]] = vars[i];
+                                };
+                                return cpd.eval(s);
+                            }
+                        })(compiled, symNames);
+                } else {
+                    throw "Invalid Surfaceplot 'parse' Parameter: use 0, 1, or 2 symbols";
+                }
+                // now we have a fns array
+                // handle animation
+                if (plot.animated) {
+                    // TODO future feature
+                    throw "Error: Surface animation not yet supported.";
+                } else {
+                    // sample from the fn
+                    var minX = plot.minX,
+                        maxX = plot.maxX,
+                        minY = plot.minY,
+                        maxY = plot.maxY,
+                        step = plot.step,
+                        data = [];
+                    for (var i = minX; i < maxX; i+=step) {
+                        var row = [];
+                        for (var j = minY; j < maxY; j+=step) {
+                            row.push( fn([i,j]) );
+                        };
+                        data.push( row );
+                    };
+                    plot.data = data;
+                };
+            }
 
             // forward declare for clarity
             var material = new THREE.MeshLambertMaterial({
@@ -210,31 +335,28 @@ ThreePlot = {
                 alert("Surface animation not yet supported.");
                 throw "Plot Type Error: surface animation not yet supported";
             } else {
-
-                if (plot.function) { // type-check
-                    // TODO convert to the other plot type and triangulate()
-                    // var f = math.parse(plot["function"]).compile(math);
-                    throw "Syntax Error: this feature is not yet supported.";
-                    throw "up";
-                } else {
-                    // var up = plot.up.indexOf(Math.max(plot.up));
-                    geometry = ThreePlot.triangulate( plot );
-                    geometry.computeFaceNormals();
-                    geometry.computeVertexNormals();
-                    mesh = new THREE.Mesh( geometry, material );
-                    iplot.threeObj = mesh;
-                    // don't change geometry
-                    iplot.update = function () {};
-                }
+                geometry = ThreePlot.triangulate( plot );
+                geometry.computeFaceNormals();
+                geometry.computeVertexNormals();
+                mesh = new THREE.Mesh( geometry, material );
+                iplot.threeObj = mesh;
+                // don't change geometry
+                iplot.update = function () {};
 
             };
 
             // rotate to specified normal
-            var up = new THREE.Vector3(0,0,1);
-            var n = new THREE.Vector3(plot.up[0], plot.up[1], plot.up[2]);
-            n.normalize();
-            var q = new THREE.Quaternion().setFromUnitVectors(up, n)
-            mesh.setRotationFromQuaternion(q);
+            if (plot.rotation) {
+                var up = new THREE.Vector3(0,0,1);
+                var rotn = new THREE.Vector3(
+                    plot.rotation[0],
+                    plot.rotation[1],
+                    plot.rotation[2]
+                );
+                rotn.normalize();
+                var q = new THREE.Quaternion().setFromUnitVectors(up, rotn)
+                mesh.setRotationFromQuaternion(q);
+            };
 
             // add to scene and quit
             scene.add(mesh);
