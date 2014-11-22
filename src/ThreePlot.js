@@ -65,33 +65,6 @@ ThreePlot = {
         plotCtx.controls.target.copy(M.center); // for orbit
     },
 
-    "updateLights": function (plotCtx) {
-        // add new lights to scene
-        // this creates a fairly homogenous light effect
-        // TODO just have light shine out of camera?
-        var M = plotCtx.metrics;
-        var ps = [
-            [M.distX,0,0],[-M.distX,0,0],
-            [0,M.distY,0],[0,-M.distY,0],
-            [0,0,M.distZ],[0,0,-M.distZ]
-        ];
-        var dls = [];
-        for (var i = 0; i < ps.length; i++) {
-            var p = ps[i];
-            var dLight = new THREE.DirectionalLight( 0xffffff, 0.4 );
-            dLight.position.set(p[0],p[1],p[2]);
-            plotCtx.scene.add( dLight );
-            dls.push(dLight);
-        };
-        // remove old lights
-        var old = plotCtx.lights;
-        for (var i = 0; i < old.length; i++) {
-            plotCtx.scene.remove( old[i] );
-        };
-        // add new lights to plotCtx
-        plotCtx.lights = dls;
-    },
-
     "triangulate": function (minX,minY,maxX,maxY,data) {
         var geometry = new THREE.Geometry();
         // add vertices
@@ -440,8 +413,12 @@ ThreePlot = {
                 plotCtx.iplots[j].update();
             };
 
-            // update controls and render
+            // update controls and lights
             plotCtx.controls.update( 1 );
+            plotCtx.light.position.copy( plotCtx.camera.position );
+            plotCtx.light.lookAt( plotCtx.metrics.center );
+
+            // render
             plotCtx.renderer.render( plotCtx.scene, plotCtx.camera );
         };
 
@@ -554,6 +531,12 @@ ThreePlot = {
         };
 
         // ---------------------
+        // Light
+
+        var light = new THREE.DirectionalLight( 0xffffff, 0.9 );
+        scene.add(light);
+
+        // ---------------------
         // Animate
 
         // create plot context
@@ -563,13 +546,14 @@ ThreePlot = {
         plotCtx.camera = camera;
         plotCtx.controls = controls;
         plotCtx.iplots = iplots;
-        plotCtx.lights = [];
+        plotCtx.light = light;
         plotCtx.id = Math.random().toString(36).slice(2); // random alpha-numeric
 
-        // fix camera and lights
+        // fix camera and light
         ThreePlot.updateMetrics(plotCtx);
         ThreePlot.retargetCamera(plotCtx);
-        ThreePlot.updateLights(plotCtx);
+        light.position.copy( camera.position );
+        light.lookAt( plotCtx.metrics.center );
 
         // ---------------------
         // Events
@@ -581,7 +565,6 @@ ThreePlot = {
                 return function (e) {
                     ThreePlot.updateMetrics(plotCtx);
                     ThreePlot.retargetCamera(plotCtx);
-                    ThreePlot.updateLights(plotCtx);
                 }
             })(plotCtx),
             false
@@ -595,4 +578,5 @@ ThreePlot = {
     },
 }
 
+// start the render loop
 ThreePlot.animate();
