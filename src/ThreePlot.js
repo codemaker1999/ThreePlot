@@ -135,6 +135,23 @@ ThreePlot = {
         return geometry;
     },
 
+    "uniqueSymbolNames": function (tree) {
+        // return the unique symbolNodes of tree
+        // filter the SymbolNodes out
+        var arr = tree.filter(function (node) {
+            return node.type == 'SymbolNode';
+        });
+        // get unique list of names
+        var dummy = {}, names = [];
+        for(var i = 0, l = arr.length; i < l; ++i){
+            if(!dummy.hasOwnProperty(arr[i].name)) {
+                names.push(arr[i].name);
+                dummy[arr[i].name] = 1;
+            }
+        }
+        return names;
+    },
+
     "parseIPlot": function (plot, scene) {
         // parse plottable object into an iterator that updates ThreeJS geometries
 
@@ -145,28 +162,67 @@ ThreePlot = {
             // -------------------------------------------------------------------------
             case "lineplot":
 
+            // TODO There is a chance for property collisions here
             if (plot.parse) {
                 // convert into the other form and continue
                 var fns = [];
                 for (var i = 0; i < plot.parse.length; i++) {
-                    var parsed   = math.parse(plot.parse[i]),
-                        symNodes = parsed.args.filter(function (x) { x.type == "SymbolNode" });
-                    if (symNodes.length === 0) {
-                        fns.push(function (t) {});
-                    } else if (symNodes.length === 1) {
-                        var varname = symNodes[0].name;
-                        fn = (function (v) {  })(varname);
+                    var tree     = math.parse(plot.parse[i]),
+                        symNames = ThreePlot.uniqueSymbolNames( tree ),
+                        compiled = tree.compile(math);
+                    if (symNames.length === 0) {
+                        fns.push((
+                            function (cpd) {
+                                return function (t) {
+                                    return cpd.eval();
+                                }
+                            }
+                        )(compiled));
+                    } else if (symNames.length === 1) {
+                        var varname = symNames[0];
+                        fns.push(
+                            (function (cpd, vname) {
+                                return function (t) {
+                                    var s = {};
+                                    s[vname] = t;
+                                    return cpd.eval(s);
+                                }
+                            })(compiled, varname)
+                        );
                     } else {
                         throw "Invalid Lineplot 'parse' Parameter: use 0 or 1 symbols";
                     }
                 };
+                // now we have a fns array
+                plot.fns = fns;
                 // handle animation
                 if (plot.animated) {
-                    
+                    // get initial condition
+                    var t0 = plot.start;
+                    plot.xyz = [fns[0](t0), fns[1](t0), fns[2](t0)];
+                    // create step function
+                    plot.t = t0;
+                    plot.dt = plot.step;
+                    plot.step = function () {
+                        var fns = this.fns,
+                            t   = this.t,
+                            xyz = [fns[0](t), fns[1](t), fns[2](t)];
+                        this.t += this.dt;
+                        return xyz;
+                    };
                 } else {
-                    plot.data = 
+                    // sample from the fns
+                    var start = plot.start,
+                        end   = plot.end,
+                        dt    = plot.step,
+                        data  = [];
+                    DB = fns;
+                    for (var t = start; t < end; t+=dt) {
+                        data.push([fns[0](t), fns[1](t), fns[2](t)]);
+                    };
+                    plot.data = data;
                 };
-            }
+            } // end parse
 
             var material = new THREE.LineBasicMaterial({
                 color: plot.color,

@@ -83,6 +83,25 @@ var plots = [
         "data": sineBlanket(-10,-10,10,10,0.5),
         // rotate after plotting
         "rotation": [0,1,1]
+    },
+    // ----------------------------------------------------------
+    {
+        "label": "parsed lineplot",
+        "type": "lineplot",
+        "parse": ["t % 10","t^2 % 5","3*sin(t)"],
+        "start": 0,
+        "end": 100,
+        "step": 1/50
+    },
+    // ----------------------------------------------------------
+    {
+        "label": "parsed animated lineplot",
+        "type": "lineplot",
+        "animated": true,
+        "parse": ["-t % 10","-t^2 % 5","3*sin(t)"],
+        "lineLength": 1000,
+        "start": 0,
+        "step": 1/50
     }
     // ----------------------------------------------------------
 ];
