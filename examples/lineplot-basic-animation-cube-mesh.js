@@ -3,8 +3,8 @@ var meshCube = {
     "animated": true,
     "lineLength": 300,
     "xyz": [0,0,0], // initial point
-    // our step function just returns a random point in the unit cube
-    "step": function () {
+    // our next function just returns a random point in the unit cube
+    "next": function () {
         var x = Math.random(),
             y = Math.random(),
             z = Math.random();

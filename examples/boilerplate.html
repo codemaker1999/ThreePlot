@@ -46,7 +46,7 @@
         "animated": true,
         "lineLength": 10000, // buffered geometry is fixed size
         "xyz": [0,1,0], // initial condition
-        "step": function () {
+        "next": function () {
             var t = this.t;
             var p = [Math.sin(t), Math.cos(t), t/10];
             this.t += 1/50;
@@ -62,7 +62,7 @@
         "animated": true,
         "lineLength": 300, // buffered geometry is fixed size
         "xyz": [0,0,0], // initial condition
-        "step": function () {
+        "next": function () {
             var phi   = 2*Math.PI*Math.random(),
                 theta = Math.PI*Math.random(),
                 x     = Math.cos(phi)*Math.sin(theta),

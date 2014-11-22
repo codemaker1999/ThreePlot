@@ -53,7 +53,7 @@ var animTraj = {
     "animated": true,
     "lineLength": 10000, // buffered geometry is fixed size
     "xyz": [0,1,0], // initial condition
-    "step": function () {
+    "next": function () {
         var t = this.t;
         var p = [Math.sin(t), Math.cos(t), t];
         this.t += this.dt;
@@ -113,6 +113,59 @@ var parsedSurface = {
     "rotation": [0,2,1]
 };
 plots.push(parsedSurface);
+
+/******************************************************
+ *  Static Surface Plots
+ */
+
+ function sineBlanket(minx,miny,maxx,maxy,step,t) {
+    var sb = [];
+    for (var i = minx; i < maxx; i+=step) {
+        var row = [];
+        for (var j = miny; j < maxy; j+=step) {
+            row.push( (Math.sin(i) + Math.cos(j))*Math.sin(t) );
+        };
+        sb.push( row );
+    };
+    return sb
+}
+
+var animSurf = {
+    "type": "surfaceplot",
+    "animated": true,
+    "minX": -5,
+    "maxX": 5,
+    "minY": -5,
+    "maxY": 5,
+    "rotation": [0,1,1],
+    "mesh": sineBlanket(-5,-5,5,5,1/5,0), // initial condition
+    "next": function () {
+        var t = this.t;
+        var mesh = sineBlanket(-5,-5,5,5,1/5,t);
+        this.t += this.dt;
+        return mesh;
+    },
+    // helper keys
+    "t": 0,
+    "dt": 1/20
+};
+plots.push(animSurf);
+
+// parsing
+var parsedAnimSurf = {
+    "type": "surfaceplot",
+    "animated": true,
+    // enforce that time is always "t"
+    "parse": "sin(t)*(sin(x)+sin(y))",
+    "minX" : -6,
+    "maxX" : 6,
+    "minY" : -6,
+    "maxY" : 6,
+    "step" : 1/4,
+    "start": 0,
+    "dt"   : 1/20
+};
+plots.push(animSurf);
 
 /******************************************************
  *  Global Settings

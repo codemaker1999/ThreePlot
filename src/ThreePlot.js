@@ -194,22 +194,21 @@ ThreePlot = {
                     }
                 };
                 // now we have a fns array
-                plot.fns = fns; // TODO no need to store this on plot
                 // handle animation
                 if (plot.animated) {
-                    // get initial condition
-                    var t0 = plot.start;
-                    plot.xyz = [fns[0](t0), fns[1](t0), fns[2](t0)];
-                    // create step function
-                    plot.t = t0;
+                    // create 'next' function
+                    plot.t = plot.start;
                     plot.dt = plot.step;
-                    plot.step = function () {
-                        var fns = this.fns,
-                            t   = this.t,
-                            xyz = [fns[0](t), fns[1](t), fns[2](t)];
-                        this.t += this.dt;
-                        return xyz;
-                    };
+                    plot.next = (function (fns) {
+                        return function () {
+                            var t   = this.t,
+                                xyz = [fns[0](t), fns[1](t), fns[2](t)];
+                            this.t += this.dt;
+                            return xyz;
+                        };
+                    })(fns);
+                    // set initial condition
+                    plot.xyz = plot.next();
                 } else {
                     // sample from the fns
                     var start = plot.start,
@@ -221,7 +220,7 @@ ThreePlot = {
                     };
                     plot.data = data;
                 };
-            } // end parse
+            } // end parsing
 
             var material = new THREE.LineBasicMaterial({
                 color: plot.color,
@@ -245,7 +244,7 @@ ThreePlot = {
                 // iplot
                 iplot.threeObj = traj;
                 iplot.update = function () {
-                    var xyz = this.plot.step();
+                    var xyz = this.plot.next();
                     var new_xyz = new THREE.Vector3(xyz[0], xyz[1], xyz[2]);
                     this.plot.xyz = new_xyz;
                     // update trajectory
@@ -281,27 +280,62 @@ ThreePlot = {
                 var fn;
                 var tree     = math.parse(plot.parse),
                     symNames = ThreePlot.uniqueSymbolNames( tree ),
-                    compiled = tree.compile(math);
-                if (symNames.length < 3) {
-                    fn = (function (cpd, vname) {
-                            return function (vars) {
-                                var s = {};
-                                for (var i = 0; i < symNames.length; i++) {
+                    compiled = tree.compile(math),
+                    reqNumVars = 3;
+                // special case for animations
+                if (symNames.indexOf("t") != -1) reqNumVars++;
+
+                if (symNames.length < reqNumVars) {
+                    fn = (function (cpd, vnames) {
+                            return function (vars, t) {
+                                var s = {}, j = 0;
+                                for (var i = 0; i < vnames.length; i++) {
                                     // NOTE: input symbols are used in order they
-                                    // appear in the input funciton string
-                                    s[symNames[i]] = vars[i];
+                                    // appear in the input funciton string (except t)
+                                    if (typeof t != "undefined" && vnames[i] === "t") {
+                                        s["t"] = t;
+                                        j++;
+                                    } else {
+                                        s[vnames[i]] = vars[i-j];
+                                    };
                                 };
                                 return cpd.eval(s);
                             }
                         })(compiled, symNames);
                 } else {
-                    throw "Invalid Surfaceplot 'parse' Parameter: use 0, 1, or 2 symbols";
+                    throw "Invalid Surfaceplot 'parse' Parameter: use 0, 1, or 2 symbols, " +
+                        "plus 't' if you are animating a surface.";
                 }
                 // now we have a fns array
                 // handle animation
                 if (plot.animated) {
-                    // TODO future feature
-                    throw "Error: Surface animation parsing not yet supported.";
+                    // create 'next' function
+                    plot.t  = plot.start;
+                    plot.dt = plot.step;
+                    plot.next = (function (fn) {
+                        return function () {
+                            // sample from the fn
+                            var minX = this.minX,
+                                maxX = this.maxX,
+                                minY = this.minY,
+                                maxY = this.maxY,
+                                t    = this.t,
+                                dt   = this.dt,
+                                mesh = [];
+                            // construct initial condition
+                            for (var i = minX; i < maxX; i+=dt) {
+                                var row = [];
+                                for (var j = minY; j < maxY; j+=dt) {
+                                    row.push( fn([i,j], t) );
+                                };
+                                mesh.push( row );
+                            };
+                            this.t += dt;
+                            return mesh;
+                        };
+                    })(fn);
+                    // set initial condition
+                    plot.mesh = plot.next();
                 } else {
                     // sample from the fn
                     var minX = plot.minX,
@@ -319,9 +353,9 @@ ThreePlot = {
                     };
                     plot.data = data;
                 };
-            }
+            } // end parsing
 
-            // forward declare for clarity
+            // forward declare
             var material = new THREE.MeshLambertMaterial({
                 color: plot.color,
                 shading: THREE.SmoothShading,
@@ -340,7 +374,7 @@ ThreePlot = {
                 iplot.threeObj = mesh;
                 iplot.update = function () {
                     var plt = this.plot;
-                    plt.mesh = plt.step();
+                    plt.mesh = plt.next();
                     // replace entire geometry object
                     // TODO is there a better implementation?
                     var geo = ThreePlot.triangulate(
@@ -348,7 +382,10 @@ ThreePlot = {
                     );
                     geo.computeFaceNormals();
                     geo.computeVertexNormals();
-                    geo.verticesNeedUpdate = true;
+                    geo.verticesNeedUpdate = true; // flag for update
+                    // threeJS holds references to geometries in object3Ds,
+                    // so we must call .dispose() to avoid memory leaks
+                    this.threeObj.geometry.dispose();
                     this.threeObj.geometry = geo;
                 };
             } else {
