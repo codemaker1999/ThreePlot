@@ -436,6 +436,7 @@ ThreePlot = {
         var userSettings = arguments[2] || {};
         var settings     = {};
         var ZERO         = new THREE.Vector3(0,0,0);
+        var fixCamFlag   = userSettings.cameraPosn;
         settings.showGrid    = userSettings.showGrid    || true; // TODO
         settings.showAxes    = userSettings.showAxes    || true; // TODO
         settings.autoRotate  = userSettings.autoRotate  || false;
@@ -551,7 +552,7 @@ ThreePlot = {
 
         // fix camera and light
         ThreePlot.updateMetrics(plotCtx);
-        ThreePlot.retargetCamera(plotCtx);
+        if (!fixCamFlag) ThreePlot.retargetCamera(plotCtx);
         light.position.copy( camera.position );
         light.lookAt( plotCtx.metrics.center );
 
