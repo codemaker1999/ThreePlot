@@ -157,6 +157,39 @@ var plots = [
         "dt"   : 1/20
     },
     // ----------------------------------------------------------
+    // {
+    //     "label": "wireframe parsed sine blanket",
+    //     "type": "surfaceplot",
+    //     // provide f(x,y), where z=f(x,y)
+    //     "parse": "sin(x)+cos(y)",
+    //     "rotation": [0,0,1],
+    //     "minX": -10,
+    //     "maxX": 10,
+    //     "minY": -10,
+    //     "maxY": 10,
+    //     "step": 1/10,
+    //     "wireframe": true,
+    //     "wireframeColor": "#1c1",
+    //     // not part of API, just convenience
+    //     "settings": {"autoRotate": true}
+    // },
+    // ----------------------------------------------------------
+    // {
+    //     "label": "wireframe parsed animated sine blanket",
+    //     "type": "surfaceplot",
+    //     "animated": true,
+    //     // enforce that time is always "t"
+    //     "parse": "sin(t)*(sin(x)+sin(y))",
+    //     "minX" : -6,
+    //     "maxX" : 6,
+    //     "minY" : -6,
+    //     "maxY" : 6,
+    //     "step" : 1/4,
+    //     "start": 0,
+    //     "dt"   : 1/20,
+    //     "wireframe": true
+    // }
+    // ----------------------------------------------------------
 ];
 
 for (var i = 0; i < plots.length; i++) {
