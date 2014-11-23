@@ -444,8 +444,18 @@ ThreePlot = {
         settings.near        = userSettings.near        || 0.005;
         settings.far         = userSettings.far         || 500;
         settings.cameraAngle = userSettings.cameraAngle || 45;
-        settings.cameraPosn  = userSettings.cameraPosn  || ZERO;
-        settings.orbitTarget = userSettings.orbitTarget || ZERO
+        settings.cameraPosn  = userSettings.cameraPosn  || [0,0,0];
+        userSettings.cameraPosn = new THREE.Vector3(
+            userSettings.cameraPosn[0],
+            userSettings.cameraPosn[1],
+            userSettings.cameraPosn[2]
+        );
+        settings.orbitTarget = userSettings.orbitTarget || [0,0,0];
+        userSettings.orbitTarget = new THREE.Vector3(
+            userSettings.orbitTarget[0],
+            userSettings.orbitTarget[1],
+            userSettings.orbitTarget[2]
+        )
 
         /*\
         |*| Declare variables
