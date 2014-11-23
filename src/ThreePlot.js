@@ -332,7 +332,8 @@ ThreePlot = {
             var material = new THREE.MeshLambertMaterial({
                 color: plot.color,
                 shading: THREE.SmoothShading,
-                side: THREE.DoubleSide
+                side: THREE.DoubleSide,
+                wireframe: plot.wireframe || false
             });
             var geometry = {};
             var mesh = {};
