@@ -80,7 +80,7 @@ var pulsingBlanket = {
     "maxX" : 6,
     "minY" : -6,
     "maxY" : 6,
-    "step" : 1/4,
+    "step" : 1/4, // dx and dy
     "start": 0,
     "dt"   : 1/20
 };
