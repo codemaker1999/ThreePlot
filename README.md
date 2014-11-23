@@ -51,7 +51,7 @@ var animSpiral = {
 ThreePlot.plot([ animSpiral ], targetHtmlElement);
 ```
 
-and to create a surface plot, say a sinusoidal blanket:
+to create a surface plot, say a sinusoidal blanket:
 
 ```js
 var blanket = {
@@ -66,6 +66,26 @@ var blanket = {
 };
 
 ThreePlot.plot([ blanket ], targetHtmlElement);
+```
+
+and to create an animated surface plot, you might write:
+
+```js
+var pulsingBlanket = {
+    "type": "surfaceplot",
+    "animated": true,
+    // "t" is always interpretted as time
+    "parse": "sin(t)*(sin(x)+sin(y))",
+    "minX" : -6,
+    "maxX" : 6,
+    "minY" : -6,
+    "maxY" : 6,
+    "step" : 1/4,
+    "start": 0,
+    "dt"   : 1/20
+};
+
+ThreePlot.plot([ pulsingBlanket ], targetHtmlElement);
 ```
 
 ThreePlot will figure the rest out. There are many customizable options, check out `/examples/api-overview.js` if you want a quick reference to them. Tip: double-click on the plot to retarget the camera (this is useful for animations).
