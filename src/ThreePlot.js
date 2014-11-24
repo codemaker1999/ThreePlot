@@ -62,7 +62,37 @@ ThreePlot = {
         plotCtx.camera.position.y = cameraPosn.y;
         plotCtx.camera.position.z = cameraPosn.z;
         plotCtx.camera.lookAt(M.center);
-        plotCtx.controls.target.copy(M.center); // for orbit
+        if (THREE.OrbitControls && plotCtx.controls instanceof THREE.OrbitControls) {
+            plotCtx.controls.target.copy(M.center);
+        };
+    },
+
+    "updateGrid": function (plotCtx) {
+        if (plotCtx.grid) plotCtx.scene.remove(plotCtx.grid);
+        var m = plotCtx.metrics,
+            size = 0, //todo
+            step = 0;
+
+        // Make Three Object
+        var geometry = new THREE.Geometry();
+        var material = new THREE.LineBasicMaterial( { vertexColors: THREE.VertexColors } );
+        var color1 = new THREE.Color( 0x444444 );
+        var color2 = new THREE.Color( 0x888888 );
+
+        for (var i = -size; i <= size; i += step) {
+            geometry.vertices.push(
+                new THREE.Vector3( -size, 0, i ), new THREE.Vector3( size, 0, i ),
+                new THREE.Vector3( i, 0, -size ), new THREE.Vector3( i, 0, size )
+            );
+            var color = i === 0 ? this.color1 : this.color2;
+            geometry.colors.push( color, color, color, color );
+        }
+
+        grid = new THREE.Line( geometry, material, THREE.LinePieces );
+
+        // update
+        plotCtx.scene.add( grid );
+        plotCtx.grid = grid;
     },
 
     "triangulate": function (minX,minY,maxX,maxY,data) {
@@ -131,43 +161,41 @@ ThreePlot = {
         var iplot = {"plot": plot};
         
         switch (plot.type) {
+
             // -------------------------------------------------------------------------
             // -------------------------------------------------------------------------
+            
             case "lineplot":
 
-            // TODO There is a chance for property collisions here
+            /**  PARSE INPUT  **/
+
+            // convert to the 'manual' form of lineplot
             if (plot.parse) {
-                // convert into the other form and continue
+                
+                // fns holds the parsed x(t), y(t), and z(t) funcitons
                 var fns = [];
                 for (var i = 0; i < plot.parse.length; i++) {
+                    
                     var tree     = math.parse(plot.parse[i]),
                         symNames = ThreePlot.uniqueSymbolNames( tree ),
                         compiled = tree.compile(math);
-                    if (symNames.length === 0) {
-                        fns.push((
-                            function (cpd) {
-                                return function (t) {
-                                    return cpd.eval();
-                                }
+
+                    if (symNames.length > 1) throw "Argument Error: "+
+                        "Please use 0 or 1 symbols for parsed lineplot functions";
+                    
+                    fns.push(
+                        (function (cpd, symNames) {
+                            return function (t) {
+                                var s = {};
+                                if (symNames.length > 0) s[symNames[0]] = t;
+                                return cpd.eval(s);
                             }
-                        )(compiled));
-                    } else if (symNames.length === 1) {
-                        var varname = symNames[0];
-                        fns.push(
-                            (function (cpd, vname) {
-                                return function (t) {
-                                    var s = {};
-                                    s[vname] = t;
-                                    return cpd.eval(s);
-                                }
-                            })(compiled, varname)
-                        );
-                    } else {
-                        throw "Invalid Lineplot 'parse' Parameter: use 0 or 1 symbols";
-                    }
-                };
-                // now we have a fns array
-                // handle animation
+                        })(compiled, symNames)
+                    );
+
+                }
+
+                // animated lineplot
                 if (plot.animated) {
                     // create 'next' function
                     plot.t = plot.start;
@@ -182,7 +210,10 @@ ThreePlot = {
                     })(fns);
                     // set initial condition
                     plot.xyz = plot.next();
-                } else {
+                }
+
+                // static lineplot
+                else {
                     // sample from the fns
                     var start = plot.start,
                         end   = plot.end,
@@ -193,7 +224,10 @@ ThreePlot = {
                     };
                     plot.data = data;
                 };
-            } // end parsing
+
+            }
+
+            /**  BUILD THREE JS OBJECT  **/
 
             var material = new THREE.LineBasicMaterial({
                 color: plot.color,
@@ -202,16 +236,19 @@ ThreePlot = {
             var geometry = {};
             var traj = {};
             
+            // animated lineplot
             if (plot.animated) {
 
                 geometry = new THREE.Geometry();
                 geometry.dynamic = true;
+
+                // initialize all points in geometry to the initial point
                 var xyz = new THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
                 for (var j=0; j<plot.lineLength; j++) {
                    geometry.vertices.push(xyz);
                 }
+
                 traj = new THREE.Line(geometry, material);
-                // prevent culling (could be inefficient for lots of lines)
                 traj.frustumCulled = false;
 
                 // iplot
@@ -226,16 +263,22 @@ ThreePlot = {
                     this.threeObj.geometry.verticesNeedUpdate = true;
                 };
 
-            } else {
+            }
+
+            // static lineplot
+            else {
 
                 geometry = new THREE.Geometry();
+
+                // fill the geometry with provided points
                 for (var j=0; j<plot.data.length; j++) {
                     var xyz = new THREE.Vector3( plot.data[j][0], plot.data[j][1], plot.data[j][2]);
                     geometry.vertices.push(xyz);
                 }
+                
                 traj = new THREE.Line(geometry, material);
                 iplot.threeObj = traj;
-                // don't change geometry
+                // don't change geometry on update
                 iplot.update = function () {};
 
             };
@@ -246,6 +289,7 @@ ThreePlot = {
             
             // -------------------------------------------------------------------------
             // -------------------------------------------------------------------------
+
             case "surfaceplot":
 
             if (plot.parse) {
@@ -328,13 +372,21 @@ ThreePlot = {
                 };
             } // end parsing
 
-            // forward declare
+            // materials
             var material = new THREE.MeshLambertMaterial({
                 color: plot.color,
-                shading: THREE.SmoothShading,
+                shading: plot.shading,
                 side: THREE.DoubleSide,
-                wireframe: plot.wireframe || false
             });
+            if (plot.wireframe) {
+                var wireframeMaterial = new THREE.MeshBasicMaterial({
+                    color: plot.wireframeColor || 0xeeeeee,
+                    wireframe: true,
+                    transparent: true
+                }); 
+            }
+
+            // forward declare
             var geometry = {};
             var mesh = {};
 
@@ -344,7 +396,15 @@ ThreePlot = {
                 );
                 geometry.computeFaceNormals();
                 geometry.computeVertexNormals();
-                mesh = new THREE.Mesh( geometry, material );
+                if (plot.wireframe) {
+                    var multiMaterial = [ material, wireframeMaterial ];
+                    mesh = THREE.SceneUtils.createMultiMaterialObject(
+                        geometry,
+                        multiMaterial
+                    );
+                } else {
+                    mesh = new THREE.Mesh( geometry, material );
+                }
                 iplot.threeObj = mesh;
                 iplot.update = function () {
                     var plt = this.plot;
@@ -434,160 +494,187 @@ ThreePlot = {
         |*| Unpack settings
         \*/
 
-        var userSettings = arguments[2] || {};
-        var settings     = {};
-        var ZERO         = new THREE.Vector3(0,0,0);
-        var fixCamFlag   = userSettings.cameraPosn;
-        settings.showGrid    = userSettings.showGrid    || true; // TODO
-        settings.showAxes    = userSettings.showAxes    || true; // TODO
-        settings.autoRotate  = userSettings.autoRotate  || false;
-        settings.ctrlType    = userSettings.ctrlType    || "orbit";
-        settings.near        = userSettings.near        || 0.005;
-        settings.far         = userSettings.far         || 500;
-        settings.cameraAngle = userSettings.cameraAngle || 45;
-        settings.cameraPosn  = userSettings.cameraPosn  || [0,0,0];
-        settings.cameraPosn = new THREE.Vector3(
-            settings.cameraPosn[0],
-            settings.cameraPosn[1],
-            settings.cameraPosn[2]
-        );
-        settings.orbitTarget = userSettings.orbitTarget || [0,0,0];
-        settings.orbitTarget = new THREE.Vector3(
-            settings.orbitTarget[0],
-            settings.orbitTarget[1],
-            settings.orbitTarget[2]
-        )
+        var settings      = arguments[2] || {};
+        var usrDefinedCam = settings.cameraPosn; // flag
+        
+        settings.far            = settings.far            || 500;
+        settings.near           = settings.near           || 0.005;
+        settings.showGrid       = settings.showGrid       || true; // TODO
+        settings.showAxes       = settings.showAxes       || true; // TODO
+        settings.ctrlType       = settings.ctrlType       || "orbit";
+        settings.clearColor     = settings.clearColor     || "#111";
+        settings.autoRotate     = settings.autoRotate     || false;
+        settings.cameraPosn     = settings.cameraPosn     || [0,0,0];
+        settings.cameraAngle    = settings.cameraAngle    || 45;
+        settings.orbitTarget    = settings.orbitTarget    || [0,0,0];
+        settings.lightIntensity = settings.lightIntensity || 0.85;
 
         /*\
         |*| Declare variables
         \*/
 
-        var // local constants
-            NUMPLOTS = plots.length,
-            // var SCALE = 1, // TODO expose this option?
-            WIDTH    = plotTarget.offsetWidth,
-            HEIGHT   = plotTarget.offsetHeight,
-            BLACK    = new THREE.Color().setRGB(0,0,0),
-            WHITE    = new THREE.Color().setRGB(1,1,1),
-            NEAR     = settings.near,
-            FAR      = settings.far,
-            CAMANGLE = settings.cameraAngle,
-            CTRLTYPE = settings.ctrlType,
-            AUTOROT  = settings.autoRotate,
-
-            orbitTarget = settings.orbitTarget,
-            cameraPosn = settings.cameraPosn,
-            plotCtx = {};
+        var FAR           = settings.far,
+            NEAR          = settings.near,
+            WIDTH         = plotTarget.offsetWidth,
+            HEIGHT        = plotTarget.offsetHeight,
+            AUTOROT       = settings.autoRotate,
+            NUMPLOTS      = plots.length,
+            CTRLTYPE      = settings.ctrlType,
+            SHOWGRID      = settings.showGrid,
+            SHOWAXES      = settings.showAxes,
+            CAMANGLE      = settings.cameraAngle,
+            CAMERAPOSN    = settings.cameraPosn,
+            CLEARCOLOR    = new THREE.Color( settings.clearColor ),
+            ORBITTARGET   = settings.orbitTarget,
+            LIGHTINTESITY = settings.lightIntensity
+            ;
 
         /*\
         |*| Set up ThreeJS
         \*/
 
-        // ---------------------
+        // -----------------------------------------------------
         // Renderer
 
         var renderer = new THREE.WebGLRenderer({
+            // TODO expose more options?
             // scale: SCALE,
             // brightness: 2,
             antialias: true
         });
-        renderer.setSize(WIDTH,HEIGHT);
-        // TODO next line might be bork. Next few, actually
-        // renderer.domElement.style.position = "absolute"; 
+        renderer.setSize( WIDTH, HEIGHT );
         renderer.domElement.style.top = "0px";
         renderer.domElement.style.left = "0px";
-        renderer.setClearColor( BLACK );
+        renderer.setClearColor( CLEARCOLOR );
         plotTarget.appendChild( renderer.domElement );
 
-        // ---------------------
+        // -----------------------------------------------------
         // Scene
 
         var scene = new THREE.Scene();
 
-        // ---------------------
+        // -----------------------------------------------------
         // Camera
 
         var camera = new THREE.PerspectiveCamera(CAMANGLE, WIDTH/HEIGHT, NEAR, FAR);
-        camera.position.x = cameraPosn.x;
-        camera.position.y = cameraPosn.y;
-        camera.position.z = cameraPosn.z;
+        camera.position.x = CAMERAPOSN[0];
+        camera.position.y = CAMERAPOSN[1];
+        camera.position.z = CAMERAPOSN[2];
         camera.up = new THREE.Vector3(0,0,1);
-        camera.lookAt(orbitTarget);
+        camera.lookAt(ORBITTARGET);
         scene.add(camera);
 
-        // ---------------------
+        // -----------------------------------------------------
         // Controls
 
         var controls;
-        if (CTRLTYPE === "fly") {
+        switch (CTRLTYPE) {
+            
+            case "fly":
+            if (!THREE.FlyControls) throw "Error: "+
+                "Please include FlyControls.js before plotting";
             controls = new THREE.FlyControls( camera );
             controls.dragToLook = true;
-            // controls.autoForward = true;
-        } else if (CTRLTYPE === "orbit") {
+            break;
+
+            case "orbit":
+            if (!THREE.OrbitControls) throw "Error: "+
+                "Please include OrbitControls.js before plotting";
             controls = new THREE.OrbitControls( camera, renderer.domElement );
-            controls.target.copy(orbitTarget);
-            // TODO maybe pause rotation on mouse down or something
+            controls.target.x = ORBITTARGET[0];
+            controls.target.y = ORBITTARGET[1];
+            controls.target.z = ORBITTARGET[2];
             controls.autoRotate = AUTOROT;
+            break;
+
+            default:
+            throw "Argument Error: Invalid control type '"+CTRLTYPE+"'";
+            break;
+
         }
         
-        // ---------------------
+        // -----------------------------------------------------
         // Parse plot objects
 
         var iplots = [];
         for (var i = 0; i < plots.length; i++) {
+
             var p = plots[i];
+            
             // add/parse color
-            p.color = p.color ? new THREE.Color(p.color) : new THREE.Color().setHSL(i/plots.length,80/100,65/100);
+            p.color = p.color ? new THREE.Color(p.color) :
+                                new THREE.Color().setHSL(i/plots.length,80/100,65/100);
+            
+            // shading type
+            var sh = p.shading || 'smooth';
+            p.shading = sh === 'smooth' ? THREE.SmoothShading : THREE.FlatShading;
+            
             // convert
             iplots.push( ThreePlot.parseIPlot(p, scene) );
+
         };
 
-        // ---------------------
+        // -----------------------------------------------------
         // Light
 
-        var light = new THREE.DirectionalLight( 0xffffff, 0.9 );
+        var light = new THREE.DirectionalLight( 0xffffff, LIGHTINTESITY );
         scene.add(light);
 
-        // ---------------------
+        // -----------------------------------------------------
         // Animate
 
         // create plot context
         var plotCtx = {};
         plotCtx.renderer = renderer;
-        plotCtx.scene = scene;
-        plotCtx.camera = camera;
+        plotCtx.scene    = scene;
+        plotCtx.camera   = camera;
         plotCtx.controls = controls;
-        plotCtx.iplots = iplots;
-        plotCtx.light = light;
-        plotCtx.id = Math.random().toString(36).slice(2); // random alpha-numeric
+        plotCtx.iplots   = iplots;
+        plotCtx.light    = light;
+        plotCtx.id       = Math.random().toString(36).slice(2); // alpha-num string
 
-        // fix camera and light
+        // -----------------------------------------------------
+        // Update Scene (Camera, Lights, Grid, Axes)
+
         ThreePlot.updateMetrics(plotCtx);
-        if (!fixCamFlag) ThreePlot.retargetCamera(plotCtx);
+
+        // maybe update camera position and orbit target
+        if (!usrDefinedCam) ThreePlot.retargetCamera(plotCtx);
+
+        // shine light where camera is looking
         light.position.copy( camera.position );
         light.lookAt( plotCtx.metrics.center );
+        
+        // TODO
+        // if (SHOWGRID) ThreePlot.updateGrid( plotCtx );
+        // if (SHOWAXES) ThreePlot.updateAxes( plotCtx );
 
-        // ---------------------
+        // -----------------------------------------------------
         // Events
 
         // retarget camera (helpful for animations)
         plotTarget.addEventListener(
             'dblclick',
-            (function (plotCtx) {
+            (function (plotCtx, SHOWGRID, SHOWAXES) {
                 return function (e) {
                     ThreePlot.updateMetrics(plotCtx);
                     ThreePlot.retargetCamera(plotCtx);
+                    // if (SHOWGRID) ThreePlot.updateGrid( plotCtx );
+                    // if (SHOWAXES) ThreePlot.updateAxes( plotCtx );
                 }
-            })(plotCtx),
+            })(plotCtx, SHOWGRID, SHOWAXES),
             false
         );
 
-        // ---------------------
-        // Plot statics and return
+        // -----------------------------------------------------
+        // Plot static plots and return id
+
         plotCtx.renderer.render( plotCtx.scene, plotCtx.camera );
         ThreePlot.activePlots.push(plotCtx);
         return plotCtx.id;
+
     },
+
 }
 
 // start the render loop
