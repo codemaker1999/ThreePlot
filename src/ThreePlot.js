@@ -161,43 +161,41 @@ ThreePlot = {
         var iplot = {"plot": plot};
         
         switch (plot.type) {
+
             // -------------------------------------------------------------------------
             // -------------------------------------------------------------------------
+            
             case "lineplot":
 
-            // TODO There is a chance for property collisions here
+            /**  PARSE INPUT  **/
+
+            // convert to the 'manual' form of lineplot
             if (plot.parse) {
-                // convert into the other form and continue
+                
+                // fns holds the parsed x(t), y(t), and z(t) funcitons
                 var fns = [];
                 for (var i = 0; i < plot.parse.length; i++) {
+                    
                     var tree     = math.parse(plot.parse[i]),
                         symNames = ThreePlot.uniqueSymbolNames( tree ),
                         compiled = tree.compile(math);
-                    if (symNames.length === 0) {
-                        fns.push((
-                            function (cpd) {
-                                return function (t) {
-                                    return cpd.eval();
-                                }
+
+                    if (symNames.length > 1) throw "Argument Error: "+
+                        "Please use 0 or 1 symbols for parsed lineplot functions";
+                    
+                    fns.push(
+                        (function (cpd, symNames) {
+                            return function (t) {
+                                var s = {};
+                                if (symNames.length > 0) s[symNames[0]] = t;
+                                return cpd.eval(s);
                             }
-                        )(compiled));
-                    } else if (symNames.length === 1) {
-                        var varname = symNames[0];
-                        fns.push(
-                            (function (cpd, vname) {
-                                return function (t) {
-                                    var s = {};
-                                    s[vname] = t;
-                                    return cpd.eval(s);
-                                }
-                            })(compiled, varname)
-                        );
-                    } else {
-                        throw "Invalid Lineplot 'parse' Parameter: use 0 or 1 symbols";
-                    }
-                };
-                // now we have a fns array
-                // handle animation
+                        })(compiled, symNames)
+                    );
+
+                }
+
+                // animated lineplot
                 if (plot.animated) {
                     // create 'next' function
                     plot.t = plot.start;
@@ -212,7 +210,10 @@ ThreePlot = {
                     })(fns);
                     // set initial condition
                     plot.xyz = plot.next();
-                } else {
+                }
+
+                // static lineplot
+                else {
                     // sample from the fns
                     var start = plot.start,
                         end   = plot.end,
@@ -223,7 +224,10 @@ ThreePlot = {
                     };
                     plot.data = data;
                 };
-            } // end parsing
+
+            }
+
+            /**  BUILD THREE JS OBJECT  **/
 
             var material = new THREE.LineBasicMaterial({
                 color: plot.color,
@@ -232,16 +236,19 @@ ThreePlot = {
             var geometry = {};
             var traj = {};
             
+            // animated lineplot
             if (plot.animated) {
 
                 geometry = new THREE.Geometry();
                 geometry.dynamic = true;
+
+                // initialize all points in geometry to the initial point
                 var xyz = new THREE.Vector3( plot.xyz[0], plot.xyz[1], plot.xyz[2] );
                 for (var j=0; j<plot.lineLength; j++) {
                    geometry.vertices.push(xyz);
                 }
+
                 traj = new THREE.Line(geometry, material);
-                // prevent culling (could be inefficient for lots of lines)
                 traj.frustumCulled = false;
 
                 // iplot
@@ -256,16 +263,22 @@ ThreePlot = {
                     this.threeObj.geometry.verticesNeedUpdate = true;
                 };
 
-            } else {
+            }
+
+            // static lineplot
+            else {
 
                 geometry = new THREE.Geometry();
+
+                // fill the geometry with provided points
                 for (var j=0; j<plot.data.length; j++) {
                     var xyz = new THREE.Vector3( plot.data[j][0], plot.data[j][1], plot.data[j][2]);
                     geometry.vertices.push(xyz);
                 }
+                
                 traj = new THREE.Line(geometry, material);
                 iplot.threeObj = traj;
-                // don't change geometry
+                // don't change geometry on update
                 iplot.update = function () {};
 
             };
@@ -276,6 +289,7 @@ ThreePlot = {
             
             // -------------------------------------------------------------------------
             // -------------------------------------------------------------------------
+
             case "surfaceplot":
 
             if (plot.parse) {
@@ -505,10 +519,12 @@ ThreePlot = {
             HEIGHT        = plotTarget.offsetHeight,
             AUTOROT       = settings.autoRotate,
             NUMPLOTS      = plots.length,
-            CAMANGLE      = settings.cameraAngle,
             CTRLTYPE      = settings.ctrlType,
-            CLEARCOLOR    = new THREE.Color( settings.clearColor ),
+            SHOWGRID      = settings.showGrid,
+            SHOWAXES      = settings.showAxes,
+            CAMANGLE      = settings.cameraAngle,
             CAMERAPOSN    = settings.cameraPosn,
+            CLEARCOLOR    = new THREE.Color( settings.clearColor ),
             ORBITTARGET   = settings.orbitTarget,
             LIGHTINTESITY = settings.lightIntensity
             ;
@@ -630,8 +646,8 @@ ThreePlot = {
         light.lookAt( plotCtx.metrics.center );
         
         // TODO
-        // if () ThreePlot.updateGrid( plotCtx );
-        // if () ThreePlot.updateAxes( plotCtx );
+        // if (SHOWGRID) ThreePlot.updateGrid( plotCtx );
+        // if (SHOWAXES) ThreePlot.updateAxes( plotCtx );
 
         // -----------------------------------------------------
         // Events
@@ -639,22 +655,26 @@ ThreePlot = {
         // retarget camera (helpful for animations)
         plotTarget.addEventListener(
             'dblclick',
-            (function (plotCtx) {
+            (function (plotCtx, SHOWGRID, SHOWAXES) {
                 return function (e) {
                     ThreePlot.updateMetrics(plotCtx);
                     ThreePlot.retargetCamera(plotCtx);
-                    // ThreePlot.updateGrid( plotCtx );
+                    // if (SHOWGRID) ThreePlot.updateGrid( plotCtx );
+                    // if (SHOWAXES) ThreePlot.updateAxes( plotCtx );
                 }
-            })(plotCtx),
+            })(plotCtx, SHOWGRID, SHOWAXES),
             false
         );
 
         // -----------------------------------------------------
-        // Plot statics and return
+        // Plot static plots and return id
+
         plotCtx.renderer.render( plotCtx.scene, plotCtx.camera );
         ThreePlot.activePlots.push(plotCtx);
         return plotCtx.id;
+
     },
+
 }
 
 // start the render loop
