@@ -139,17 +139,28 @@ var plt = {
         // iterate mesh
         var maxdif;
         if (this.meshes.length === 0) {
+
+            // iterate mesh
             var res = iterMesh(thismesh);
             maxdif = res[1];
             var newMesh = res[0];
+
+            // n is the number of interpolation steps
+            // it is fairly arbitrary, but will decrease
+            // to 0 after several iterations
             var n = Math.floor(maxdif*50);
+
+            // generate linear transition of meshes
             this.meshes = interpolate(thismesh, newMesh, n);
+
         };
+
+        // get next mesh
         var mesh = this.meshes.pop();
-        this.mesh = mesh;
 
         // check if we are below tolerance
         if (maxdif < eps) this.done = true;
+        
         return mesh;
     }
 };

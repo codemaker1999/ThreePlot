@@ -113,7 +113,7 @@ var plt = {
         if (maxdif < eps) this.done = true;
 
         // return new mesh
-        return mesh;
+        return newMesh;
     }
 };
 

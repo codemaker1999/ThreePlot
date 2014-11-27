@@ -50,7 +50,7 @@
     editor.getSession().setMode("ace/mode/javascript");
 
     // download js
-    $.get("a10-series.js", function (data) {
+    $.get("series-plot.js", function (data) {
         // set editor contents and run
         editor.getSession().setValue( data );
         eval(data);
