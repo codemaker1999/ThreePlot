@@ -1,11 +1,4 @@
 /*|
-|*|  John Meade
-|*|  20448552
-|*|  
-|*|  The following code uses my plotting library. See
-|*|  https://github.com/codemaker1999/ThreePlot
-|*|  for reference.
-|*|  
 |*|  Drag the mouse to rotate the plot. Edit the code here
 |*|  and click the run button to see the effect. Try decreasing
 |*|  dx for a smoother graph (decent computers can handle 1/30
