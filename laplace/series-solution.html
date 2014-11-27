@@ -70,7 +70,7 @@ $$V(x,y)=\sum_{n=1}^{\infty} V_n(x,y)$$
 So the boundary condition becomes
 $$V_0=\sum_{n=1}^{\infty} B_n sinh(n \pi) sin \left ( \frac{n \pi x}{l} \right )$$
 
-Use the Fourier trick
+Use the Fourier trick (orthogonality of sines)
 $$\int_{0}^{l} V_0 sin \left ( \frac{m \pi x}{l} \right ) dx = \int_{0}^{l} \sum_{n=1}^{\infty} \left [ B_n sinh(n \pi) sin \left ( \frac{n \pi x}{l} \right ) sin \left ( \frac{m \pi x}{l} \right ) \right ] dx$$
 
 $$V_0 \left [ \frac{-l}{m \pi} cos \left ( \frac{m \pi x}{l} \right ) \right ]_{0}^{l} = \int_{0}^{l} B_m sinh(m \pi) sin \left ( \frac{m \pi x}{l} \right ) dx$$
@@ -87,9 +87,7 @@ $$V(x,y) = \sum_{m=1}^{\infty} \frac{2 V_0 [ 1 - (-1)^m ]}{m \pi sinh(m \pi)} si
 </div>
 
 <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-<script>
-document.getElementById("math").hidden=false;
-</script>
+
 </body>
 
 </html>
