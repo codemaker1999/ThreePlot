@@ -53,7 +53,7 @@
     $.get("relaxation-smooth.js", function (data) {
         // set editor contents and run
         editor.getSession().setValue( data );
-        eval(data);
+        updatePlot();
     });
 
     function updatePlot () {
