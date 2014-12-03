@@ -118,6 +118,4 @@ TODO
 
 * Labels and axes
 
-* Surface plotting
-
 * GUI with settings
