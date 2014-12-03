@@ -14,7 +14,7 @@ Usage
 
 There are only two steps to getting started.
 
-1. load in the ThreeJS and ThreePlot libraries
+1. load in the ThreeJS and ThreePlot libraries (and math.js if you are using the features that parse functions from strings)
 
 2. create a valid plottable object, and provide a DIV or something for the plot to live in
 
