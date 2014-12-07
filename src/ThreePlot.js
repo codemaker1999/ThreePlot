@@ -636,7 +636,7 @@ ThreePlot = {
         // -----------------------------------------------------
         // Update Scene (Camera, Lights, Grid, Axes)
 
-        ThreePlot.updateMetrics(plotCtx);
+        if (plots.length != 0) ThreePlot.updateMetrics(plotCtx);
 
         // maybe update camera position and orbit target
         if (!usrDefinedCam) ThreePlot.retargetCamera(plotCtx);
@@ -657,6 +657,7 @@ ThreePlot = {
             'dblclick',
             (function (plotCtx, SHOWGRID, SHOWAXES) {
                 return function (e) {
+                    if (plotCtx.iplots.length === 0) return;
                     ThreePlot.updateMetrics(plotCtx);
                     ThreePlot.retargetCamera(plotCtx);
                     // if (SHOWGRID) ThreePlot.updateGrid( plotCtx );
