@@ -18,8 +18,15 @@
     </style>
 </head>
 <body>
+<<<<<<< HEAD
+    <div>Moved to https://github.com/codemaker1999/sim-shim-js</div>
+=======
     <div><a href="/ThreePlot/live/">Interactive Live Demo</a></div>
     <div><a href="/ThreePlot/test/">Test Page With Examples</a></div>
     <div><a href="/ThreePlot/gui/">Basic GUI Example</a></div>
+    <div><a href="/ThreePlot/laplace/">Laplace Equation Example</a></div>
+    <!--
+    -->
+>>>>>>> 6170e3ba7a5ded007a36325c8c43f4d9918b49d0
 </body>
 </html>
